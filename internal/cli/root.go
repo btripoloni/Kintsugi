@@ -3,15 +3,21 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
 
+var (
+	storePath string
+	dbPath    string
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "composer",
+	Use:   "modmanager",
 	Short: "A declarative mod manager for Linux",
-	Long: `Composer is the core engine of the Mod Manager.
+	Long: `ModManager is the core engine of the Mod Manager.
 It executes build plans (JSON DAGs) to create isolated, reproducible modpacks using Linux technologies like OverlayFS and Namespaces.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -28,12 +34,17 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.composer.yaml)")
+	// Find home directory.
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// Fallback to current directory if home is not found (rare)
+		home = "."
+	}
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// XDG-like defaults for user space
+	defaultStore := filepath.Join(home, ".local", "share", "modmanager", "store")
+	defaultDB := filepath.Join(home, ".local", "share", "modmanager", "metadata.db")
+
+	rootCmd.PersistentFlags().StringVar(&storePath, "store", defaultStore, "Path to the content-addressable store")
+	rootCmd.PersistentFlags().StringVar(&dbPath, "db", defaultDB, "Path to the metadata database")
 }
