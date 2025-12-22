@@ -2,86 +2,30 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kintsugi/internal/recipe"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type Store struct {
-	db      *sql.DB
 	RootDir string
 }
 
-const schema = `
-CREATE TABLE IF NOT EXISTS recipes (
-    hash TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    expression TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS derivations (
-    hash TEXT PRIMARY KEY,
-    recipe_hash TEXT NOT NULL,
-    path TEXT NOT NULL,
-    type TEXT NOT NULL, -- build, source, or meta
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (recipe_hash) REFERENCES recipes(hash)
-);
-
-CREATE TABLE IF NOT EXISTS derivation_dependencies (
-    derivation_hash TEXT NOT NULL,
-    dependency_hash TEXT NOT NULL,
-    PRIMARY KEY (derivation_hash, dependency_hash),
-    FOREIGN KEY (derivation_hash) REFERENCES derivations(hash),
-    FOREIGN KEY (dependency_hash) REFERENCES derivations(hash)
-);
-
-CREATE INDEX IF NOT EXISTS idx_derivation_dependencies_dependency ON derivation_dependencies(dependency_hash);
-
-CREATE TABLE IF NOT EXISTS modpacks (
-    name TEXT PRIMARY KEY,
-    active_derivation_hash TEXT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (active_derivation_hash) REFERENCES derivations(hash)
-);
-`
-
 func NewStore(rootDir string) (*Store, error) {
-	// RootDir is ~/.kintsugi (or passed arg)
-	// DB is at RootDir/kintsugi.db
-
 	if err := os.MkdirAll(rootDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create root directory: %w", err)
 	}
 
-	dbPath := filepath.Join(rootDir, "kintsugi.db")
+	s := &Store{RootDir: rootDir}
 
-	db, err := sql.Open("sqlite3", dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	s := &Store{db: db, RootDir: rootDir}
-	if err := s.migrate(); err != nil {
-		db.Close()
-		return nil, err
-	}
 	// Ensure subdirectories
 	dirs := []string{"store", "recipes", "modpacks"}
 	for _, d := range dirs {
 		if err := os.MkdirAll(filepath.Join(rootDir, d), 0755); err != nil {
-			db.Close()
 			return nil, fmt.Errorf("failed to create subdir %s: %w", d, err)
 		}
 	}
@@ -95,6 +39,10 @@ func (s *Store) StorePath() string {
 
 func (s *Store) RecipesPath() string {
 	return filepath.Join(s.RootDir, "recipes")
+}
+
+func (s *Store) ModpacksPath() string {
+	return filepath.Join(s.RootDir, "modpacks")
 }
 
 func (s *Store) GetDerivationPath(hash, name, version string) string {
@@ -118,44 +66,54 @@ func (s *Store) LoadDerivation(hash string) (*recipe.Derivation, error) {
 	return &drv, nil
 }
 
-func (s *Store) migrate() error {
-	_, err := s.db.Exec(schema)
-	if err != nil {
-		return fmt.Errorf("failed to migrate schema: %w", err)
-	}
+func (s *Store) Close() error {
+	// No-op: no database to close
 	return nil
 }
 
-func (s *Store) Close() error {
-	return s.db.Close()
-}
-
-// Placeholder methods for future implementation
-func (s *Store) InsertRecipe(ctx context.Context, hash, name, expression string) error {
-	_, err := s.db.ExecContext(ctx, "INSERT OR IGNORE INTO recipes (hash, name, expression) VALUES (?, ?, ?)", hash, name, expression)
-	return err
-}
-
-func (s *Store) UpdateModpack(ctx context.Context, name, hash string) error {
-	query := `
-		INSERT INTO modpacks (name, active_derivation_hash, updated_at)
-		VALUES (?, ?, CURRENT_TIMESTAMP)
-		ON CONFLICT(name) DO UPDATE SET
-			active_derivation_hash = excluded.active_derivation_hash,
-			updated_at = excluded.updated_at;
-	`
-	_, err := s.db.ExecContext(ctx, query, name, hash)
-	return err
-}
-
+// GetActiveModpack returns the active build hash for a modpack by reading symlinks.
+// It follows: modpacks/[name]/current build -> [hash]-[name]-gen-N -> store/[hash]
 func (s *Store) GetActiveModpack(ctx context.Context, name string) (string, error) {
-	var hash string
-	err := s.db.QueryRowContext(ctx, "SELECT active_derivation_hash FROM modpacks WHERE name = ?", name).Scan(&hash)
-	if err == sql.ErrNoRows {
-		return "", fmt.Errorf("modpack '%s' not found or has no active build", name)
-	}
+	modpackDir := filepath.Join(s.ModpacksPath(), name)
+	currentLink := filepath.Join(modpackDir, "current build")
+
+	// Read "current build" symlink -> "[hash]-[name]-gen-N"
+	target, err := os.Readlink(currentLink)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("modpack '%s' has no active build", name)
 	}
+
+	// Resolve the gen symlink to get the store path
+	genLink := filepath.Join(modpackDir, target)
+	storePath, err := os.Readlink(genLink)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve gen symlink: %w", err)
+	}
+
+	// The store path is the full hash (basename of storePath)
+	hash := filepath.Base(storePath)
 	return hash, nil
+}
+
+// DerivationExists checks if a derivation exists in the store
+func (s *Store) DerivationExists(hash string) bool {
+	// Check if any directory in store starts with the hash
+	entries, err := os.ReadDir(s.StorePath())
+	if err != nil {
+		return false
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() && strings.HasPrefix(entry.Name(), hash) {
+			return true
+		}
+	}
+	return false
+}
+
+// RecipeExists checks if a recipe file exists
+func (s *Store) RecipeExists(hash string) bool {
+	recipePath := filepath.Join(s.RecipesPath(), hash+".json")
+	_, err := os.Stat(recipePath)
+	return err == nil
 }

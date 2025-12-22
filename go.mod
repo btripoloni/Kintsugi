@@ -1,3 +1,3 @@
-module btripoloni.mod-manager
+module btripoloni.kintsugi
 
 go 1.25.4
