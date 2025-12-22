@@ -12,11 +12,19 @@ deno run --allow-read --allow-write interpreter/mod.ts <caminho-do-modpack>
 ## 2. Entrada e Saída
 
 **Entrada:**
-- Caminho para pasta do modpack (contendo `modpack.json` e `expression.ts`)
+- Caminho para pasta do modpack (contendo `modpack.json` e `main.ts`)
 
 **Saída:**
-- Arquivos JSON em `/recipes/[hash].json`
+- Arquivos JSON em `/recipes/[hash]-[nome da receita]-[versão].json`
 - Retorna hash da receita raiz para stdout
+
+## 2.1 Workflow do Usuário
+1. Usuário roda `kintsugi init meu-modpack`.
+2. O sistema cria `~/.kintsugi/modpacks/meu-modpack/` contendo `modpack.json` e `main.ts`.
+3. Usuário edita `main.ts` para definir o modpack.
+4. Usuário roda `kintsugi build` dentro da pasta.
+5. O executor roda o interpretador (Deno) sobre o arquivo `main.ts`.
+
 
 ## 3. API de Expressões
 
@@ -57,11 +65,12 @@ interface BuildOptions {
 }
 ```
 
-## 4. Exemplo de Expressão
+## 4. Exemplo de Expressão (main.ts)
+As funções `mkLocal`, `mkUrl`, `mkBuild` são disponibilizadas pela runtime do Kintsugi.
 
 ```typescript
-// expression.ts
-import { mkLocal, mkUrl, mkBuild } from "modman/mod.ts";
+// main.ts
+import { mkLocal, mkUrl, mkBuild } from "kintsugi/lib.ts"; // ou caminho equivalente fornecido pelo ambiente
 
 const game = mkLocal("skyrimse", "1.6.117", "/games/skyrim");
 
@@ -79,26 +88,3 @@ export default mkBuild({
   umu: "1.3.0",
 });
 ```
-
-## 5. Geração de Hash
-
-O interpretador calcula a hash de cada receita:
-1. Serializa a receita para JSON (sem campo `out`)
-2. Calcula SHA256 do texto
-3. Trunca para 32 caracteres
-4. Preenche o campo `out`: `[hash]-[nome]-[versão]`
-
-## 6. Estrutura de Arquivos
-
-```
-interpreter/
-├── deno.json          # Configuração e imports
-├── mod.ts             # Entry point
-├── lib/
-│   ├── derivation.ts  # Tipos e funções base
-│   ├── sources.ts     # mkLocal, mkUrl
-│   ├── build.ts       # mkBuild
-│   └── hash.ts        # Cálculo de hash
-```
-## 7. Helpers específicos por jogo
-Cada jogo deve ter um repositorio separado que ira conter os helpers especificos para ele, junto de expressões que serão usadas como pacotes para os mods.
