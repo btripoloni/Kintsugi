@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"kintsugi/internal/interpreter"
+	"kintsugi/internal/store"
 
 	"github.com/spf13/cobra"
 )
@@ -178,7 +179,20 @@ var BuildCmd = &cobra.Command{
 
 		nextGen := maxGen + 1
 		linkName := fmt.Sprintf("%s-%s-gen-%d", modpackHash, mpMeta.Name, nextGen)
-		storePath := filepath.Join(home, ".kintsugi", "store", rootHash)
+
+		// Create store instance to find the folder name
+		s, err := store.NewStore(filepath.Join(home, ".kintsugi"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize store: %v\n", err)
+			return
+		}
+
+		fullName := s.FindDerivationByHash(rootHash)
+		if fullName == "" {
+			fmt.Fprintf(os.Stderr, "Built derivation %s not found in store\n", rootHash)
+			return
+		}
+		storePath := filepath.Join(s.StorePath(), fullName)
 
 		// Create gen symlink
 		if err := os.Symlink(storePath, filepath.Join(cwd, linkName)); err != nil {

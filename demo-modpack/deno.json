@@ -1,0 +1,5 @@
+{
+	"imports": {
+		"kintsugi/": "./.kintsugi/types/"
+	}
+}

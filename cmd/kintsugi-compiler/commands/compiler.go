@@ -234,7 +234,7 @@ func buildComposite(s *store.Store, drv *recipe.Derivation, dest string) error {
 
 		layerPath := filepath.Join(s.StorePath(), layerDrv.Out)
 
-		if err := symlinkTree(layerPath, dest); err != nil {
+		if err := linkTree(layerPath, dest); err != nil {
 			return fmt.Errorf("failed to link layer %s: %w", layerHash, err)
 		}
 	}
@@ -283,11 +283,26 @@ func resolveDependencies(s *store.Store, rootHash string) ([]*recipe.Derivation,
 }
 
 func copyFile(src, dst string) error {
-	data, err := os.ReadFile(src)
+	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, data, 0644)
+	defer srcFile.Close()
+
+	// Get source file info for permissions
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
 
 func copyDir(src, dst string) error {
@@ -305,7 +320,7 @@ func copyDir(src, dst string) error {
 	})
 }
 
-func symlinkTree(srcRoot, dstRoot string) error {
+func linkTree(srcRoot, dstRoot string) error {
 	return filepath.Walk(srcRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -321,12 +336,17 @@ func symlinkTree(srcRoot, dstRoot string) error {
 			return os.MkdirAll(destPath, 0755)
 		}
 
-		if err := os.Symlink(path, destPath); err != nil {
+		// Use hard link for files, fallback to symlink if it fails
+		if err := os.Link(path, destPath); err != nil {
 			if os.IsExist(err) {
 				os.Remove(destPath)
-				return os.Symlink(path, destPath)
+				// Try again after removing
+				if err := os.Link(path, destPath); err == nil {
+					return nil
+				}
 			}
-			return err
+			// Fallback: symlink if hard link fails (e.g. cross-device)
+			return os.Symlink(path, destPath)
 		}
 		return nil
 	})

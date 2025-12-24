@@ -24,4 +24,5 @@ func init() {
 	RootCmd.AddCommand(BuildCmd)
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(gcCmd)
+	RootCmd.AddCommand(ModpackCmd)
 }

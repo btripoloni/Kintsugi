@@ -158,3 +158,63 @@ func assertRecipeExists(t *testing.T, s *Store, hash string, expected bool) {
 		t.Errorf("Recipe file %s should be deleted", path)
 	}
 }
+
+func TestGarbageCollect_32CharHashes(t *testing.T) {
+	// Setup temporary store
+	tmpDir, err := os.MkdirTemp("", "kintsugi-gc-test-32")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	s, err := NewStore(tmpDir)
+	if err != nil {
+		t.Fatalf("Failed to create store: %v", err)
+	}
+	defer s.Close()
+
+	ctx := context.Background()
+
+	// 32-character hashes
+	hashB := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	hashA := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	// Helper to create valid derivation & recipe
+	createDrv := func(hash, name string, deps []string) {
+		drv := recipe.Derivation{
+			Out:          hash + "-" + name + "-v1",
+			Dependencies: deps,
+		}
+		recipeData, _ := json.Marshal(drv)
+		os.WriteFile(filepath.Join(s.RecipesPath(), hash+".json"), recipeData, 0644)
+		os.MkdirAll(filepath.Join(s.StorePath(), hash+"-"+name+"-v1"), 0755)
+	}
+
+	createDrv(hashB, "depB", nil)
+	createDrv(hashA, "activeA", []string{hashB})
+
+	// Set active
+	modpackDir := filepath.Join(s.ModpacksPath(), "test32")
+	os.MkdirAll(modpackDir, 0755)
+	storePath := filepath.Join(s.StorePath(), hashA+"-activeA-v1")
+	os.Symlink(storePath, filepath.Join(modpackDir, "current-gen-1"))
+	os.Symlink("current-gen-1", filepath.Join(modpackDir, "current build"))
+
+	// Run GC
+	result, err := s.GarbageCollect(ctx, false)
+	if err != nil {
+		t.Fatalf("GC failed: %v", err)
+	}
+
+	// Verify A and B are NOT deleted
+	if _, err := os.Stat(storePath); err != nil {
+		t.Errorf("Active derivation A was deleted")
+	}
+	if _, err := os.Stat(filepath.Join(s.StorePath(), hashB+"-depB-v1")); err != nil {
+		t.Errorf("Dependency B was deleted")
+	}
+
+	if len(result.DeletedDerivations) != 0 {
+		t.Errorf("Expected 0 deletions, got %d", len(result.DeletedDerivations))
+	}
+}

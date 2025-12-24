@@ -117,3 +117,18 @@ func (s *Store) RecipeExists(hash string) bool {
 	_, err := os.Stat(recipePath)
 	return err == nil
 }
+
+// FindDerivationByHash finds a derivation in the store that starts with the given hash
+func (s *Store) FindDerivationByHash(hash string) string {
+	entries, err := os.ReadDir(s.StorePath())
+	if err != nil {
+		return ""
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() && strings.HasPrefix(entry.Name(), hash) {
+			return entry.Name()
+		}
+	}
+	return ""
+}
