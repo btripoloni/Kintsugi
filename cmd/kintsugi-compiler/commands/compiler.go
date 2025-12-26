@@ -80,9 +80,29 @@ func buildDerivation(s *store.Store, drv *recipe.Derivation) error {
 		return buildComposite(s, drv, storePath)
 	case recipe.SourceURL:
 		return buildURL(drv, storePath)
+	case recipe.SourceVase:
+		return buildVase(s, drv, storePath)
 	default:
 		return fmt.Errorf("unknown source type: %s", drv.Src.Source)
 	}
+}
+
+func buildVase(s *store.Store, drv *recipe.Derivation, dest string) error {
+	vaseName := drv.Src.Vase
+	if vaseName == "" {
+		return fmt.Errorf("vase source missing 'vase' name")
+	}
+
+	vasePath := filepath.Join(s.VasesPath(), vaseName)
+	if _, err := os.Stat(vasePath); err != nil {
+		return fmt.Errorf("vase '%s' not found: %w", vaseName, err)
+	}
+
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return err
+	}
+
+	return linkTree(vasePath, dest)
 }
 
 func buildLocal(drv *recipe.Derivation, dest string) error {

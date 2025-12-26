@@ -25,4 +25,5 @@ func init() {
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(gcCmd)
 	RootCmd.AddCommand(ModpackCmd)
+	RootCmd.AddCommand(VaseCmd)
 }

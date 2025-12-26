@@ -6,6 +6,7 @@ const (
 	SourceLocal SourceType = "local"
 	SourceURL   SourceType = "url"
 	SourceBuild SourceType = "build"
+	SourceVase  SourceType = "vase"
 )
 
 type Source struct {
@@ -13,6 +14,7 @@ type Source struct {
 	Path        string            `json:"path,omitempty"`
 	URL         string            `json:"url,omitempty"`
 	SHA256      string            `json:"sha256,omitempty"`
+	Vase        string            `json:"vase,omitempty"`
 	Unpack      bool              `json:"unpack,omitempty"`
 	Run         string            `json:"run,omitempty"`
 	Layers      []string          `json:"layers,omitempty"`
