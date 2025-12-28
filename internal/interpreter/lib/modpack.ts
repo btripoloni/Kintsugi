@@ -37,7 +37,7 @@ export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
     return sorted;
 }
 
-export async function mkBuild(options: BuildOptions): Promise<Derivation> {
+export async function mkComposition(options: BuildOptions): Promise<Derivation> {
     const { name, layers, entrypoint, umu, args, env, permissions, postbuild } = options;
     
     // Auto-resolve transitive dependencies to form the layers list

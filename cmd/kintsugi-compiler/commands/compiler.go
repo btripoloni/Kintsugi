@@ -92,6 +92,8 @@ func buildDerivation(s *store.Store, drv *recipe.Derivation) error {
 		return buildWriteToml(f, storePath)
 	case *recipe.FetchGit:
 		return buildGit(f, storePath)
+	case *recipe.RunInBuild:
+		return buildRunInBuild(s, f, storePath)
 	default:
 		return fmt.Errorf("unknown fetcher type: %s", drv.Src.Type())
 	}
@@ -287,6 +289,17 @@ func buildGit(f *recipe.FetchGit, dest string) error {
 	return runPostFetch(f.PostFetch, dest)
 }
 
+func buildRunInBuild(s *store.Store, f *recipe.RunInBuild, dest string) error {
+	// TODO: Implement run_in_build functionality
+	// This should:
+	// 1. Load the build derivation specified by f.Build (hash)
+	// 2. Build it if not already built
+	// 3. Execute the command (f.Command.Entrypoint with args) in the build environment
+	// 4. Capture the outputs specified by f.Outputs (glob patterns)
+	// 5. Copy the captured outputs to dest
+	return fmt.Errorf("run_in_build is not yet implemented in the compiler")
+}
+
 func unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
@@ -379,6 +392,13 @@ func resolveDependencies(s *store.Store, rootHash string) ([]*recipe.Derivation,
 				if err := visit(layerHash); err != nil {
 					return err
 				}
+			}
+		}
+
+		if rib, ok := drv.Src.(*recipe.RunInBuild); ok {
+			// Also visit the build dependency for run_in_build
+			if err := visit(rib.Build); err != nil {
+				return err
 			}
 		}
 

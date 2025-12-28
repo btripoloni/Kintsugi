@@ -73,6 +73,24 @@ type FetchBuild struct {
 	Permissions []string          `json:"permissions,omitempty"`
 }
 
+type RunInBuildCommand struct {
+	Entrypoint string         `json:"entrypoint"`
+	Args       []string       `json:"args,omitempty"`
+	Umu        *RunInBuildUmu `json:"umu,omitempty"`
+}
+
+type RunInBuildUmu struct {
+	Version string `json:"version"`
+	ID      string `json:"id"`
+}
+
+type RunInBuild struct {
+	BaseFetcher
+	Build   string            `json:"build"` // Hash of the build derivation
+	Command RunInBuildCommand `json:"command"`
+	Outputs []string          `json:"outputs"`
+}
+
 type Derivation struct {
 	Out          string   `json:"out"`
 	Src          Fetcher  `json:"src"`
@@ -148,6 +166,12 @@ func (d *Derivation) UnmarshalJSON(data []byte) error {
 		src = &f
 	case "fetch_build":
 		var f FetchBuild
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "run_in_build":
+		var f RunInBuild
 		if err := json.Unmarshal(aux.Src, &f); err != nil {
 			return err
 		}

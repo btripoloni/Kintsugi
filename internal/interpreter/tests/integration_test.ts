@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "jsr:@std/assert";
 import { mkLocal, mkUrl } from "../lib/sources.ts";
-import { mkBuild } from "../lib/modpack.ts";
+import { mkComposition } from "../lib/modpack.ts";
 
 Deno.test("kintsugi interpreter integration", async (t) => {
     let gameOut = "";
@@ -28,12 +28,12 @@ Deno.test("kintsugi interpreter integration", async (t) => {
         console.log("SKSE Out:", skseOut);
     });
 
-    await t.step("mkBuild composes derivations", async () => {
+    await t.step("mkComposition composes derivations", async () => {
         // Re-create objects to simulate passing them
         const game = await mkLocal("skyrimse", "1.6.117", "/games/skyrim");
         const skse = await mkUrl("skse", "2.0.0", "https://example.com/skse.zip", "sha256-hash");
 
-        const modpack = await mkBuild({
+        const modpack = await mkComposition({
             name: "test-modpack",
             layers: [game, skse],
             entrypoint: "skse_loader.exe"

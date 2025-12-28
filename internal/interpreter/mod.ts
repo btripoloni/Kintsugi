@@ -1,11 +1,11 @@
 import { join, dirname } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
-import { mkBuild } from "./lib/modpack.ts";
-import { mkLocal, mkUrl, mkGit, mkVase, writeText, writeJson, writeToml } from "./lib/sources.ts";
+import { mkComposition } from "./lib/modpack.ts";
+import { sources, mkShard, writeRunSpec } from "./lib/sources.ts";
 import { Derivation } from "./lib/types.ts";
 
 // Export for main.ts usage
-export { mkBuild, mkLocal, mkUrl, mkGit, mkVase, writeText, writeJson, writeToml };
+export { mkComposition, sources, mkShard, writeRunSpec };
 
 async function main() {
     const args = Deno.args;
@@ -44,34 +44,34 @@ async function main() {
         const module = await import(`file://${mainTsPath}`);
 
         if (!module.default) {
-            console.error("Error: main.ts must export a default Derivation (mkBuild result).");
+            console.error("Error: main.ts must export a default Derivation (mkComposition result).");
             Deno.exit(1);
         }
 
         const rootDerivation: Derivation = await module.default;
 
         // Now we need to collect all derivations (recursively) and write them to recipes folder.
-        // But `mkBuild` and `mkLocal` return Derivations with 'out' hash.
+        // But `mkComposition` and `mkShard` return Derivations with 'out' hash.
         // They don't write to disk immediately?
         // Design says: "Gera N arquivos de receita (.json) em /recipes"
         // "Retorna hash da receita raiz para stdout"
 
         // We need a way to traverse the graph and write the files.
-        // Or `mkLocal`/`mkBuild` should register themselves in a global or similar?
+        // Or `mkShard` should register themselves in a global or similar?
         // Or we just traverse the `rootDerivation` object?
         // It has `dependencies` [hashes]. But where are the recipe definitions for those dependencies?
-        // Ah! `mkBuild` returns a Derivation. The dependencies lists HASHES.
+        // Ah! `mkComposition` returns a Derivation. The dependencies lists HASHES.
         // But the COMPILER needs the RECIPE (JSON) for those hashes.
         // If we only have the hash, we can't reconstruct the recipe!
-        // So `mkLocal` etc. must MUST write the recipe to disk OR we must return the full object graph.
+        // So `mkShard` etc. must MUST write the recipe to disk OR we must return the full object graph.
         // IF we return just the Derivation struct which has `dependencies: string[]`, we lost the children objects.
 
         // CRITICAL FIX: The Derivation structure in memory must hold the children objects (or we write on creation).
         // Writing on creation is easier for a start, but might write garbage if not used.
         // But in Nix/functional style, side effects (writing) usually happen at the end.
-        // However, if `mkBuild` only gets hashes from children, we can't traverse down.
+        // However, if `mkComposition` only gets hashes from children, we can't traverse down.
 
-        // SOLUTION: `mkLocal`/`mkBuild` should write the .json file to `recipesDir` immediately when called.
+        // SOLUTION: `mkShard` should write the .json file to `recipesDir` immediately when called.
         // Since this is a build-time generation step, this is acceptable.
         // The `interpreter` must know where to write. `recipesDir`.
         // We can use an environment variable `KINTSUGI_RECIPES_DIR`.

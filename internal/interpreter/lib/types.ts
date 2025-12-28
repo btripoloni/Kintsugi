@@ -3,6 +3,10 @@ export interface FetchUrl {
   url: string;
   sha256: string;
   unpack?: boolean;
+  method?: "GET" | "POST";       // <--- Adicionado
+  headers?: Record<string, string>; // <--- Adicionado
+  cookies?: Record<string, string>; // <--- Adicionado
+  body?: string;                 // <--- Adicionado
   postFetch?: string;
 }
 
@@ -54,6 +58,17 @@ export interface FetchBuild {
   permissions?: string[];
 }
 
+export interface RunInBuild {
+  type: "run_in_build";
+  build: Derivation; // No TS usamos o objeto, o compilador converte para hash depois
+  command: {
+    entrypoint: string;
+    args?: string[];
+    umu?: { version: string; id: string };
+  };
+  outputs: string[];
+}
+
 export type Source =
   | FetchUrl
   | FetchGit
@@ -62,7 +77,8 @@ export type Source =
   | WriteText
   | WriteJson
   | WriteToml
-  | FetchBuild;
+  | FetchBuild
+  | RunInBuild;
 
 export interface Derivation {
     name: string;
