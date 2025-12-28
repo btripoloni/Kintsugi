@@ -18,6 +18,10 @@ export async function hashDerivation(derivation: Omit<Derivation, "out"> & { nam
         version,
         ...rest
     };
+    
+    // We must not serialize full 'deps' objects into the recipe JSON
+    // @ts-ignore: deps is part of rest but we want to exclude it from serialization
+    delete toHash.deps;
 
     // Deterministic JSON stringify (keys sorted)
     const jsonString = JSON.stringify(toHash, Object.keys(toHash).sort());

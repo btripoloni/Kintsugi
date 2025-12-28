@@ -4,10 +4,12 @@ import (
 	"archive/zip"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -48,12 +50,12 @@ func Execute() {
 
 	fmt.Printf("Build Plan (%d steps):\n", len(buildOrder))
 	for i, drv := range buildOrder {
-		fmt.Printf("%d. %s (%s)\n", i+1, drv.Out, drv.Src.Source)
+		fmt.Printf("%d. %s (%s)\n", i+1, drv.Out, drv.Src.Type())
 	}
 
 	// 2. Execute Build
 	for i, drv := range buildOrder {
-		fmt.Printf("[%d/%d] Building %s (%s)...\n", i+1, len(buildOrder), drv.Out, drv.Src.Source)
+		fmt.Printf("[%d/%d] Building %s (%s)...\n", i+1, len(buildOrder), drv.Out, drv.Src.Type())
 
 		if err := buildDerivation(s, drv); err != nil {
 			fmt.Fprintf(os.Stderr, "Build failed for %s: %v\n", drv.Out, err)
@@ -73,22 +75,30 @@ func buildDerivation(s *store.Store, drv *recipe.Derivation) error {
 		return nil
 	}
 
-	switch drv.Src.Source {
-	case recipe.SourceLocal:
-		return buildLocal(drv, storePath)
-	case recipe.SourceBuild:
-		return buildComposite(s, drv, storePath)
-	case recipe.SourceURL:
-		return buildURL(drv, storePath)
-	case recipe.SourceVase:
-		return buildVase(s, drv, storePath)
+	switch f := drv.Src.(type) {
+	case *recipe.FetchLocal:
+		return buildLocal(f, storePath)
+	case *recipe.FetchBuild:
+		return buildComposite(s, f, storePath)
+	case *recipe.FetchUrl:
+		return buildURL(f, storePath)
+	case *recipe.FetchVase:
+		return buildVase(s, f, storePath)
+	case *recipe.WriteText:
+		return buildWriteText(f, storePath)
+	case *recipe.WriteJson:
+		return buildWriteJson(f, storePath)
+	case *recipe.WriteToml:
+		return buildWriteToml(f, storePath)
+	case *recipe.FetchGit:
+		return buildGit(f, storePath)
 	default:
-		return fmt.Errorf("unknown source type: %s", drv.Src.Source)
+		return fmt.Errorf("unknown fetcher type: %s", drv.Src.Type())
 	}
 }
 
-func buildVase(s *store.Store, drv *recipe.Derivation, dest string) error {
-	vaseName := drv.Src.Vase
+func buildVase(s *store.Store, f *recipe.FetchVase, dest string) error {
+	vaseName := f.Vase
 	if vaseName == "" {
 		return fmt.Errorf("vase source missing 'vase' name")
 	}
@@ -105,8 +115,8 @@ func buildVase(s *store.Store, drv *recipe.Derivation, dest string) error {
 	return linkTree(vasePath, dest)
 }
 
-func buildLocal(drv *recipe.Derivation, dest string) error {
-	srcPath := drv.Src.Path
+func buildLocal(f *recipe.FetchLocal, dest string) error {
+	srcPath := f.Path
 	if srcPath == "" {
 		return fmt.Errorf("local source missing 'path'")
 	}
@@ -119,18 +129,28 @@ func buildLocal(drv *recipe.Derivation, dest string) error {
 
 	// Copy
 	if info.IsDir() {
-		return copyDir(srcPath, dest)
+		if err := os.MkdirAll(dest, 0755); err != nil {
+			return err
+		}
+		if err := copyDir(srcPath, dest, f.Exclude); err != nil {
+			return err
+		}
+		return runPostFetch(f.PostFetch, dest)
 	}
 
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
 	}
-	return copyFile(srcPath, filepath.Join(dest, filepath.Base(srcPath)))
+	if err := copyFile(srcPath, filepath.Join(dest, filepath.Base(srcPath))); err != nil {
+		return err
+	}
+
+	return runPostFetch(f.PostFetch, dest)
 }
 
-func buildURL(drv *recipe.Derivation, dest string) error {
-	url := drv.Src.URL
-	expectHash := drv.Src.SHA256
+func buildURL(f *recipe.FetchUrl, dest string) error {
+	url := f.URL
+	expectHash := f.SHA256
 
 	if url == "" || expectHash == "" {
 		return fmt.Errorf("url source missing 'url' or 'sha256'")
@@ -184,7 +204,7 @@ func buildURL(drv *recipe.Derivation, dest string) error {
 
 	fmt.Printf("  -> Verified hash %s\n", sum)
 
-	if drv.Src.Unpack {
+	if f.Unpack {
 		fmt.Printf("  -> Unpacking %s to %s\n", filename, dest)
 		if err := unzip(destFile, dest); err != nil {
 			return fmt.Errorf("failed to unzip: %w", err)
@@ -192,7 +212,79 @@ func buildURL(drv *recipe.Derivation, dest string) error {
 		os.Remove(destFile)
 	}
 
-	return nil
+	return runPostFetch(f.PostFetch, dest)
+}
+
+func buildWriteText(f *recipe.WriteText, dest string) error {
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dest, f.Path), []byte(f.Content), 0644)
+}
+
+func buildWriteJson(f *recipe.WriteJson, dest string) error {
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(f.Content, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dest, f.Path), data, 0644)
+}
+
+func buildWriteToml(f *recipe.WriteToml, dest string) error {
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return err
+	}
+	// Placeholder for TOML serialization.
+	// We'll need a TOML library or a simple implementation.
+	// For now, we'll write it as a simple string representation if it's a map.
+	content := fmt.Sprintf("# TOML (placeholder implementation)\n# Full implementation requires a TOML library\n%v\n", f.Content)
+	return os.WriteFile(filepath.Join(dest, f.Path), []byte(content), 0644)
+}
+
+func buildGit(f *recipe.FetchGit, dest string) error {
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return err
+	}
+
+	// Clone to a temporary directory? Or directly to dest?
+	// Git clone needs destination to be empty or non-existent.
+	// Since we already created dest (storePath), we might need to handle it.
+	// Actually, better clone to a temp dir and then move/hardlink?
+	// For now, let's try direct clone if possible, or use a subfolder.
+
+	tempDir, err := os.MkdirTemp("", "kintsugi-git-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempDir)
+
+	cmd := exec.Command("git", "clone", f.URL, tempDir)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git clone failed: %w", err)
+	}
+
+	if f.Rev != "" || f.Ref != "" {
+		target := f.Rev
+		if target == "" {
+			target = f.Ref
+		}
+		cmd = exec.Command("git", "-C", tempDir, "checkout", target)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("git checkout %s failed: %w", target, err)
+		}
+	}
+
+	// Remove .git
+	os.RemoveAll(filepath.Join(tempDir, ".git"))
+
+	if err := copyDir(tempDir, dest, nil); err != nil {
+		return err
+	}
+
+	return runPostFetch(f.PostFetch, dest)
 }
 
 func unzip(src, dest string) error {
@@ -241,12 +333,12 @@ func unzip(src, dest string) error {
 	return nil
 }
 
-func buildComposite(s *store.Store, drv *recipe.Derivation, dest string) error {
+func buildComposite(s *store.Store, f *recipe.FetchBuild, dest string) error {
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
 	}
 
-	for _, layerHash := range drv.Src.Layers {
+	for _, layerHash := range f.Layers {
 		layerDrv, err := s.LoadDerivation(layerHash)
 		if err != nil {
 			return fmt.Errorf("failed to load layer %s: %w", layerHash, err)
@@ -282,8 +374,8 @@ func resolveDependencies(s *store.Store, rootHash string) ([]*recipe.Derivation,
 			}
 		}
 
-		if drv.Src.Source == recipe.SourceBuild {
-			for _, layerHash := range drv.Src.Layers {
+		if fb, ok := drv.Src.(*recipe.FetchBuild); ok {
+			for _, layerHash := range fb.Layers {
 				if err := visit(layerHash); err != nil {
 					return err
 				}
@@ -300,6 +392,18 @@ func resolveDependencies(s *store.Store, rootHash string) ([]*recipe.Derivation,
 	}
 
 	return order, nil
+}
+
+func runPostFetch(script string, dir string) error {
+	if script == "" {
+		return nil
+	}
+	fmt.Printf("  -> Running postFetch script...\n")
+	cmd := exec.Command("sh", "-c", script)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func copyFile(src, dst string) error {
@@ -325,12 +429,43 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func copyDir(src, dst string) error {
+func copyDir(src, dst string, exclude []string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		rel, _ := filepath.Rel(src, path)
+		if rel == "." {
+			return nil
+		}
+
+		// Check exclusions
+		for _, pattern := range exclude {
+			matched, err := filepath.Match(pattern, rel)
+			if err != nil {
+				continue
+			}
+			if matched {
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			// Also check if any parent matches (for deeper files)
+			// This is a simple implementation.
+			parts := strings.Split(rel, string(os.PathSeparator))
+			for i := 1; i <= len(parts); i++ {
+				subRel := filepath.Join(parts[:i]...)
+				matched, _ := filepath.Match(pattern, subRel)
+				if matched {
+					if info.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+			}
+		}
+
 		destPath := filepath.Join(dst, rel)
 
 		if info.IsDir() {

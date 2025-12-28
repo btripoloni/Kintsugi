@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"kintsugi/internal/recipe"
 	"kintsugi/internal/store"
 
 	"github.com/spf13/cobra"
@@ -40,14 +41,13 @@ var RunCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		runScript := drv.Src.Run
-		if runScript == "" {
-			// If no run script, check entrypoint?
-			// runScript = drv.Src.Entrypoint
+		var runScript string
+		if fb, ok := drv.Src.(*recipe.FetchBuild); ok {
+			runScript = fb.Entrypoint
 		}
 
 		if runScript == "" {
-			fmt.Println("No 'run' script defined for this modpack.")
+			fmt.Println("No 'run' or 'entrypoint' script defined for this modpack.")
 			return
 		}
 

@@ -1,11 +1,11 @@
 import { join, dirname } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
 import { mkBuild } from "./lib/modpack.ts";
-import { mkLocal, mkUrl, mkVase } from "./lib/sources.ts";
+import { mkLocal, mkUrl, mkGit, mkVase, writeText, writeJson, writeToml } from "./lib/sources.ts";
 import { Derivation } from "./lib/types.ts";
 
 // Export for main.ts usage
-export { mkBuild, mkLocal, mkUrl, mkVase };
+export { mkBuild, mkLocal, mkUrl, mkGit, mkVase, writeText, writeJson, writeToml };
 
 async function main() {
     const args = Deno.args;

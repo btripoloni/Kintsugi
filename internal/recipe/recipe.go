@@ -1,23 +1,71 @@
 package recipe
 
-type SourceType string
-
-const (
-	SourceLocal SourceType = "local"
-	SourceURL   SourceType = "url"
-	SourceBuild SourceType = "build"
-	SourceVase  SourceType = "vase"
+import (
+	"encoding/json"
+	"fmt"
 )
 
-type Source struct {
-	Source      SourceType        `json:"source"`
-	Path        string            `json:"path,omitempty"`
-	URL         string            `json:"url,omitempty"`
-	SHA256      string            `json:"sha256,omitempty"`
-	Vase        string            `json:"vase,omitempty"`
-	Unpack      bool              `json:"unpack,omitempty"`
-	Run         string            `json:"run,omitempty"`
-	Layers      []string          `json:"layers,omitempty"`
+type Fetcher interface {
+	Type() string
+}
+
+type BaseFetcher struct {
+	TypeStr string `json:"type"`
+}
+
+func (f BaseFetcher) Type() string {
+	return f.TypeStr
+}
+
+type FetchUrl struct {
+	BaseFetcher
+	URL       string `json:"url"`
+	SHA256    string `json:"sha256"`
+	Unpack    bool   `json:"unpack,omitempty"`
+	PostFetch string `json:"postFetch,omitempty"`
+}
+
+type FetchGit struct {
+	BaseFetcher
+	URL       string `json:"url"`
+	Rev       string `json:"rev,omitempty"`
+	Ref       string `json:"ref,omitempty"`
+	PostFetch string `json:"postFetch,omitempty"`
+}
+
+type FetchLocal struct {
+	BaseFetcher
+	Path      string   `json:"path"`
+	Exclude   []string `json:"exclude,omitempty"`
+	PostFetch string   `json:"postFetch,omitempty"`
+}
+
+type FetchVase struct {
+	BaseFetcher
+	Vase string `json:"vase"`
+}
+
+type WriteText struct {
+	BaseFetcher
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+type WriteJson struct {
+	BaseFetcher
+	Path    string      `json:"path"`
+	Content interface{} `json:"content"`
+}
+
+type WriteToml struct {
+	BaseFetcher
+	Path    string      `json:"path"`
+	Content interface{} `json:"content"`
+}
+
+type FetchBuild struct {
+	BaseFetcher
+	Layers      []string          `json:"layers"`
 	Entrypoint  string            `json:"entrypoint,omitempty"`
 	Umu         string            `json:"umu,omitempty"`
 	Args        []string          `json:"args,omitempty"`
@@ -27,8 +75,87 @@ type Source struct {
 
 type Derivation struct {
 	Out          string   `json:"out"`
-	Src          Source   `json:"src"`
+	Src          Fetcher  `json:"src"`
 	Dependencies []string `json:"dependencies,omitempty"`
 	Permissions  []string `json:"permissions,omitempty"`
 	Postbuild    string   `json:"postbuild,omitempty"`
+}
+
+func (d *Derivation) UnmarshalJSON(data []byte) error {
+	type Alias Derivation
+	aux := &struct {
+		Src json.RawMessage `json:"src"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if aux.Src == nil {
+		return nil
+	}
+
+	var base BaseFetcher
+	if err := json.Unmarshal(aux.Src, &base); err != nil {
+		return err
+	}
+
+	var src Fetcher
+	switch base.TypeStr {
+	case "fetch_url":
+		var f FetchUrl
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "fetch_git":
+		var f FetchGit
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "fetch_local":
+		var f FetchLocal
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "fetch_vase":
+		var f FetchVase
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "write_text":
+		var f WriteText
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "write_json":
+		var f WriteJson
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "write_toml":
+		var f WriteToml
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "fetch_build":
+		var f FetchBuild
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	default:
+		return fmt.Errorf("unknown fetcher type: %s", base.TypeStr)
+	}
+
+	d.Src = src
+	return nil
 }

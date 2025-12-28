@@ -231,7 +231,7 @@ func (s *Store) IsVaseInUse(name string) (bool, error) {
 			continue // Skip corrupted recipes
 		}
 
-		if drv.Src.Source == "vase" && drv.Src.Vase == name {
+		if v, ok := drv.Src.(*recipe.FetchVase); ok && v.Vase == name {
 			return true, nil
 		}
 	}
