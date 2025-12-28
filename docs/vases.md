@@ -1,45 +1,46 @@
-# O que são 'vases'
+# Vases
 
-Vases são similares aos 'shards' do Kintsugi, mas são usados para armazenar
-arquivos que não devem ser gerenciados pelo store, ou seja eles não são
-derivados. E não serão removidos pelo garbage collector.
+Os **Vases** são um sistema do Kintsugi para gerenciar arquivos grandes, pré-existentes e imutáveis, como os assets base de um jogo. Enquanto a maioria dos componentes de um modpack são [Shards](./shards.md) construídos a partir de fontes externas, os Vases são "preparados" uma única vez e depois reutilizados em múltiplas builds sem custo de cópia.
 
-o conteudo de um vase deve ser usado pelos shards para criar derivados usando
-hardlinks. de maneira similar ao mklocal, mas ao inves de copiar o conteudo do
-vase para a derivação, ele deve ser linkado.
+## 1. O Conceito
 
-os vases não são armazenados no store, mas sim em uma pasta vizinha chamada
-'vases'
+Pense em um Vase como um contêiner para arquivos que:
 
-Os vases são gerenciados pelo 'executor' usando o comando 'kintsugi vase'. as
-operações são add, remove e list.
+-   **São Grandes:** Por exemplo, os 100GB de uma instalação de jogo.
+-   **Não Mudam com Frequência:** São os arquivos originais do desenvolvedor.
+-   **São a Base para Modpacks:** Múltiplos modpacks podem usar a mesma instalação de jogo como base.
 
-add: cria um novo vase remove: remove um vase list: lista os vases
+Em vez de copiar esses arquivos massivos para o [Store](./README.md#arquitetura) a cada build, o Kintsugi utiliza Vases. Um Vase reside em um diretório dedicado (`~/.kintsugi/vases/`) e, quando usado em uma build, seu conteúdo é **vinculado por hardlink**, uma operação de metadados instantânea que não consome espaço extra em disco.
 
-## add
+Isso os torna a forma mais eficiente de usar um jogo base como a primeira camada de um modpack.
 
-campos: nome e path Quando for acionado ele vai copiar o conteudo do path para a
-pasta 'vases' e retornar o nome do vase criado.
+## 2. Gerenciando Vases (CLI)
 
-## remove
+A gestão de Vases é feita através do comando `kintsugi vase`:
 
-campos: nome Quando for acionado ele vai remover o vase com o nome passado.
-Antes de remover ele deve verificar se o vase existe, e se alguma derivação está
-usando ele. Caso esteja ele deve retornar um erro.
+-   **`kintsugi vase add <nome> <caminho>`**: Cria um novo Vase. O comando copia o conteúdo do `<caminho>` (ex: a pasta de instalação do seu jogo) para o diretório de Vases com o `<nome>` especificado.
+    -   *Exemplo:* `kintsugi vase add skyrim-se-1.6.117 /home/user/steam/steamapps/common/Skyrim\ Special\ Edition`
+-   **`kintsugi vase remove <nome>`**: Remove um Vase do sistema. A operação falhará se alguma build ainda depender dele.
+-   **`kintsugi vase list`**: Lista todos os Vases disponíveis no seu sistema.
 
-## list
+## 3. Usando um Vase em um Modpack
 
-Quando for acionado ele vai listar todos os vases existentes.
+Dentro de uma expressão de modpack, você utiliza um Vase através da fonte [`fetch_vase`](./sources.md#3-fetch_vase). Esta fonte instrui o compilador a localizar o Vase especificado e vincular seu conteúdo como a primeira camada da sua build.
 
-## nome de um vase
+```typescript
+// main.ts
+import { mkBuild, fetch_vase } from "kintsugi/lib.ts";
 
-O nome de um vase vai ser [nome]-[numero incremental apartir de 1]. por exemplo:
+// Usa o Vase "skyrim-se-1.6.117" como a camada base do modpack.
+const game = fetch_vase({
+    vase: "skyrim-se-1.6.117",
+});
 
-- game-1
-- game-2
-- game-3
+export default mkBuild({
+  name: "meu-modpack",
+  layers: [game, /* ...outros mods */],
+  // ...
+});
+```
 
-Um novo tipo de source vai ser adicionado ao Kintsugi para permitir o uso de
-vases. O tipo 'vase' vai receber o nome do vase como parametro. ele vai criar
-uma derivação que vai usar o vase como source, fazendo um hardlink para a pasta
-do vase.
+Ao usar `fetch_vase`, você garante que a base do seu modpack seja adicionada de forma instantânea e sem duplicar arquivos, mantendo a filosofia de eficiência do Kintsugi.
