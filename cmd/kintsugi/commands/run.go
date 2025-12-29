@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,11 +14,16 @@ import (
 )
 
 var RunCmd = &cobra.Command{
-	Use:   "run <modpack_name>",
+	Use:   "run <modpack_name> [nome]",
 	Short: "Run the active build of a modpack",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		name := args[0]
+		modpackName := args[0]
+		runName := "default"
+		if len(args) > 1 {
+			runName = args[1]
+		}
+
 		home, _ := os.UserHomeDir()
 
 		s, err := store.NewStore(filepath.Join(home, ".kintsugi"))
@@ -26,39 +31,78 @@ var RunCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Failed to open store: %v\n", err)
 			os.Exit(1)
 		}
-		defer s.Close() // In run command we might want to keep it open? No.
+		defer s.Close()
 
-		ctx := context.Background()
-		hash, err := s.GetActiveModpack(ctx, name)
+		// Resolve the build path through "current build" symlink
+		modpackDir := filepath.Join(s.ModpacksPath(), modpackName)
+		currentLink := filepath.Join(modpackDir, "current build")
+
+		// Read "current build" symlink -> "[hash]-[name]-gen-N"
+		target, err := os.Readlink(currentLink)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\nTry running 'kintsugi build' first.\n", err)
+			fmt.Fprintf(os.Stderr, "Error: modpack '%s' has no active build. Try running 'kintsugi build' first.\n", modpackName)
 			os.Exit(1)
 		}
 
-		drv, err := s.LoadDerivation(hash)
+		// Resolve the gen symlink to get the store path
+		genLink := filepath.Join(modpackDir, target)
+		storePath, err := os.Readlink(genLink)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to load derivation %s: %v\n", hash, err)
+			fmt.Fprintf(os.Stderr, "Error: failed to resolve gen symlink: %v\n", err)
 			os.Exit(1)
 		}
 
-		var runScript string
-		if fb, ok := drv.Src.(*recipe.FetchBuild); ok {
-			runScript = fb.Entrypoint
+		// Get the hash from the store path for environment variables
+		hash := filepath.Base(storePath)
+
+		// Locate the .run.json file
+		runJsonPath := filepath.Join(storePath, "kintsugi", "exec", fmt.Sprintf("%s.run.json", runName))
+		if _, err := os.Stat(runJsonPath); os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Error: run spec '%s' not found at %s\n", runName, runJsonPath)
+			fmt.Fprintf(os.Stderr, "Available run specs should be in: %s\n", filepath.Join(storePath, "kintsugi", "exec"))
+			os.Exit(1)
 		}
 
-		if runScript == "" {
-			fmt.Println("No 'run' or 'entrypoint' script defined for this modpack.")
-			return
+		// Read and parse the .run.json file
+		data, err := os.ReadFile(runJsonPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to read run spec: %v\n", err)
+			os.Exit(1)
 		}
 
-		// Calculate store path
-		storePath := filepath.Join(s.StorePath(), drv.Out)
+		var runSpec recipe.RunSpec
+		if err := json.Unmarshal(data, &runSpec); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to parse run spec JSON: %v\n", err)
+			os.Exit(1)
+		}
 
-		fmt.Printf("Running modpack '%s'...\n", name)
+		if runSpec.Entrypoint == "" {
+			fmt.Fprintf(os.Stderr, "Error: run spec '%s' has no entrypoint defined\n", runName)
+			os.Exit(1)
+		}
 
-		// Execute
-		runCmd := exec.Command("sh", "-c", runScript)
-		runCmd.Dir = storePath // Run inside the build directory
+		fmt.Printf("Running modpack '%s' with spec '%s'...\n", modpackName, runName)
+
+		// Build the command
+		var runCmd *exec.Cmd
+		entrypointPath := filepath.Join(storePath, runSpec.Entrypoint)
+
+		if runSpec.Umu != nil {
+			// Execute via UMU
+			umuArgs := []string{
+				"run",
+				"--umu-version", runSpec.Umu.Version,
+				"--umu-appid", runSpec.Umu.ID,
+				runSpec.Entrypoint,
+			}
+			umuArgs = append(umuArgs, runSpec.Args...)
+			runCmd = exec.Command("umu-run", umuArgs...)
+		} else {
+			// Execute natively
+			runCmd = exec.Command(entrypointPath, runSpec.Args...)
+		}
+
+		runCmd.Dir = storePath
 		runCmd.Stdout = os.Stdout
 		runCmd.Stderr = os.Stderr
 		runCmd.Stdin = os.Stdin
@@ -66,7 +110,23 @@ var RunCmd = &cobra.Command{
 		// Set environment variables
 		env := os.Environ()
 		env = append(env, fmt.Sprintf("KINTSUGI_ROOT=%s", storePath))
+		env = append(env, fmt.Sprintf("KINTSUGI_MODPACK_NAME=%s", modpackName))
+		env = append(env, fmt.Sprintf("KINTSUGI_BUILD_HASH=%s", hash))
+
+		// Add environment variables from RunSpec
+		for key, value := range runSpec.Env {
+			env = append(env, fmt.Sprintf("%s=%s", key, value))
+		}
+
 		runCmd.Env = env
+
+		// Check if umu-run is available when needed
+		if runSpec.Umu != nil {
+			if _, err := exec.LookPath("umu-run"); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: umu-run not found in PATH. Please install UMU-Launcher.\n")
+				os.Exit(1)
+			}
+		}
 
 		if err := runCmd.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "Execution failed: %v\n", err)

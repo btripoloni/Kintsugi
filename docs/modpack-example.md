@@ -8,7 +8,7 @@ O coração de um modpack Kintsugi é o arquivo `modpack.ts` (ou `main.ts`), que
 
 ```typescript
 // modpack.ts
-import { mkShard, mkBuild, bootstrap, sources } from "kintsugi";
+import { mkShard, mkBuild, sources } from "kintsugi";
 
 // --- Definição dos Shards Base ---
 
@@ -103,7 +103,7 @@ const nemesisOutput = await mkShard({
 // --- Build Final ---
 
 // A build final que será usada para rodar o jogo
-const finalBuild = await mkBuild({
+export default await mkBuild({
   name: "my-skyrim-modpack",
   layers: [
     skyrim,
@@ -116,10 +116,6 @@ const finalBuild = await mkBuild({
 });
 
 
-// --- Bootstrap ---
-
-// Exporta a build final para que o Kintsugi possa executá-la
-bootstrap(finalBuild);
 ```
 
 ## 2. Conceitos Demonstrados

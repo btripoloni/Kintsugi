@@ -91,6 +91,20 @@ type RunInBuild struct {
 	Outputs []string          `json:"outputs"`
 }
 
+// RunSpec represents the content of a .run.json file created by writeRunSpec
+type RunSpec struct {
+	Entrypoint string            `json:"entrypoint"`
+	Umu        *RunSpecUmu       `json:"umu,omitempty"`
+	Args       []string          `json:"args,omitempty"`
+	Env        map[string]string `json:"env,omitempty"`
+}
+
+// RunSpecUmu represents UMU configuration in a RunSpec
+type RunSpecUmu struct {
+	Version string `json:"version"`
+	ID      string `json:"id"`
+}
+
 type Derivation struct {
 	Out          string   `json:"out"`
 	Src          Fetcher  `json:"src"`
