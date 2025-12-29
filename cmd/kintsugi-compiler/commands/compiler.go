@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"kintsugi/internal/recipe"
 	"kintsugi/internal/store"
@@ -290,14 +291,224 @@ func buildGit(f *recipe.FetchGit, dest string) error {
 }
 
 func buildRunInBuild(s *store.Store, f *recipe.RunInBuild, dest string) error {
-	// TODO: Implement run_in_build functionality
-	// This should:
-	// 1. Load the build derivation specified by f.Build (hash)
-	// 2. Build it if not already built
-	// 3. Execute the command (f.Command.Entrypoint with args) in the build environment
-	// 4. Capture the outputs specified by f.Outputs (glob patterns)
-	// 5. Copy the captured outputs to dest
-	return fmt.Errorf("run_in_build is not yet implemented in the compiler")
+	// 1. Load the build derivation
+	buildDrv, err := s.LoadDerivation(f.Build)
+	if err != nil {
+		return fmt.Errorf("failed to load build derivation %s: %w", f.Build, err)
+	}
+
+	// 2. Get the build path in the store
+	// The build should already be constructed (due to dependency resolution)
+	// If it's a FetchBuild (composition), it's already constructed with all layers linked
+	buildPath := filepath.Join(s.StorePath(), buildDrv.Out)
+	if _, err := os.Stat(buildPath); err != nil {
+		return fmt.Errorf("build derivation %s not found at %s (make sure it's built first): %w", f.Build, buildPath, err)
+	}
+
+	// 3. Create overlay directories
+	overlayBase, err := os.MkdirTemp("", "kintsugi-run-in-build-overlay-*")
+	if err != nil {
+		return fmt.Errorf("failed to create overlay base directory: %w", err)
+	}
+	defer os.RemoveAll(overlayBase)
+
+	upperDir := filepath.Join(overlayBase, "upper")
+	workDir := filepath.Join(overlayBase, "work")
+	mergedDir := filepath.Join(overlayBase, "merged")
+
+	if err := os.MkdirAll(upperDir, 0755); err != nil {
+		return fmt.Errorf("failed to create upper directory: %w", err)
+	}
+	if err := os.MkdirAll(workDir, 0755); err != nil {
+		return fmt.Errorf("failed to create work directory: %w", err)
+	}
+	if err := os.MkdirAll(mergedDir, 0755); err != nil {
+		return fmt.Errorf("failed to create merged directory: %w", err)
+	}
+
+	// 4. Mount OverlayFS
+	lowerOpt := fmt.Sprintf("lowerdir=%s", buildPath)
+	upperOpt := fmt.Sprintf("upperdir=%s", upperDir)
+	workOpt := fmt.Sprintf("workdir=%s", workDir)
+	opts := fmt.Sprintf("%s,%s,%s", lowerOpt, upperOpt, workOpt)
+
+	fmt.Printf("  -> Mounting OverlayFS...\n")
+	if err := syscall.Mount("overlay", mergedDir, "overlay", 0, opts); err != nil {
+		return fmt.Errorf("failed to mount overlayfs: %w", err)
+	}
+	defer func() {
+		if err := syscall.Unmount(mergedDir, 0); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to unmount overlayfs: %v\n", err)
+		}
+	}()
+
+	// 5. Execute the command in the merged layer
+	entrypoint := f.Command.Entrypoint
+	entrypointPath := filepath.Join(mergedDir, entrypoint)
+
+	var cmd *exec.Cmd
+	if f.Command.Umu != nil {
+		// Execute via UMU
+		umuVersion := f.Command.Umu.Version
+		umuID := f.Command.Umu.ID
+
+		// Build umu-run command: umu-run run --umu-version <version> --umu-appid <id> <entrypoint> [args...]
+		umuArgs := []string{
+			"run",
+			"--umu-version", umuVersion,
+			"--umu-appid", umuID,
+			entrypoint,
+		}
+		umuArgs = append(umuArgs, f.Command.Args...)
+
+		cmd = exec.Command("umu-run", umuArgs...)
+		cmd.Dir = mergedDir
+	} else {
+		// Execute natively
+		cmd = exec.Command(entrypointPath, f.Command.Args...)
+		cmd.Dir = mergedDir
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	fmt.Printf("  -> Executing command in build environment...\n")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("command execution failed: %w", err)
+	}
+
+	// 6. Capture outputs from upper layer using glob patterns
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	for _, outputPattern := range f.Outputs {
+		matches, err := globMatch(upperDir, outputPattern)
+		if err != nil {
+			return fmt.Errorf("failed to match glob pattern %s: %w", outputPattern, err)
+		}
+
+		for _, match := range matches {
+			relPath, err := filepath.Rel(upperDir, match)
+			if err != nil {
+				return fmt.Errorf("failed to compute relative path: %w", err)
+			}
+
+			destPath := filepath.Join(dest, relPath)
+
+			info, err := os.Stat(match)
+			if err != nil {
+				continue // Skip if file doesn't exist
+			}
+
+			if info.IsDir() {
+				if err := os.MkdirAll(destPath, info.Mode()); err != nil {
+					return fmt.Errorf("failed to create destination directory: %w", err)
+				}
+				if err := copyDir(match, destPath, nil); err != nil {
+					return fmt.Errorf("failed to copy directory: %w", err)
+				}
+			} else {
+				if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+					return fmt.Errorf("failed to create parent directory: %w", err)
+				}
+				if err := copyFile(match, destPath); err != nil {
+					return fmt.Errorf("failed to copy file: %w", err)
+				}
+			}
+		}
+	}
+
+	fmt.Printf("  -> Captured outputs to %s\n", dest)
+	return nil
+}
+
+// globMatch matches files and directories using glob patterns with support for ** (recursive matching)
+func globMatch(rootDir, pattern string) ([]string, error) {
+	var matches []string
+
+	// Normalize pattern - remove leading / if present and convert to forward slashes
+	pattern = strings.TrimPrefix(pattern, "/")
+	pattern = filepath.ToSlash(pattern)
+
+	// Check if pattern contains ** for recursive matching
+	if !strings.Contains(pattern, "**") {
+		// Simple glob without ** - use filepath.Glob
+		globPattern := filepath.Join(rootDir, filepath.FromSlash(pattern))
+		globMatches, err := filepath.Glob(globPattern)
+		if err != nil {
+			return nil, err
+		}
+		return globMatches, nil
+	}
+
+	// Handle ** pattern
+	// For pattern like "prefix/**" or "prefix/**/suffix", we need to handle recursively
+	parts := strings.SplitN(pattern, "**", 2)
+	prefix := strings.TrimSuffix(parts[0], "/")
+	suffix := ""
+	if len(parts) > 1 {
+		suffix = strings.TrimPrefix(parts[1], "/")
+	}
+
+	// Determine the base directory to start walking from
+	walkRoot := rootDir
+	if prefix != "" {
+		walkRoot = filepath.Join(rootDir, filepath.FromSlash(prefix))
+		// Check if the prefix directory exists
+		if _, err := os.Stat(walkRoot); os.IsNotExist(err) {
+			// Prefix doesn't exist, no matches
+			return []string{}, nil
+		}
+	}
+
+	// Walk the directory tree starting from walkRoot
+	err := filepath.Walk(walkRoot, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Continue on error
+		}
+
+		// Calculate relative path from rootDir
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return nil
+		}
+
+		relPathSlash := filepath.ToSlash(relPath)
+
+		// Check if this path matches the pattern
+		if suffix == "" {
+			// Pattern is "prefix/**" - match everything under prefix
+			matches = append(matches, path)
+			return nil
+		}
+
+		// Pattern is "prefix/**/suffix" - need to check if path ends with suffix
+		// Remove the prefix part and check the remaining
+		var remaining string
+		if prefix == "" {
+			remaining = relPathSlash
+		} else {
+			// Remove prefix from the beginning
+			if strings.HasPrefix(relPathSlash, prefix+"/") {
+				remaining = relPathSlash[len(prefix+"/"):]
+			} else if relPathSlash == prefix {
+				remaining = ""
+			} else {
+				// Doesn't match prefix, skip
+				return nil
+			}
+		}
+
+		// Check if remaining ends with suffix
+		if remaining == suffix || strings.HasSuffix(remaining, "/"+suffix) {
+			matches = append(matches, path)
+		}
+
+		return nil
+	})
+
+	return matches, err
 }
 
 func unzip(src, dest string) error {
