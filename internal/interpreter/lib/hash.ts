@@ -3,6 +3,36 @@ import { encodeHex } from "jsr:@std/encoding/hex";
 import { join } from "jsr:@std/path";
 import { Derivation, Source } from "./types.ts";
 
+/**
+ * Recursively sorts all keys in an object to ensure deterministic JSON serialization.
+ * This is critical for hash generation - the same content must always produce the same hash.
+ * 
+ * Note: undefined values are preserved (JSON.stringify will omit them, which is correct behavior).
+ */
+function sortKeysRecursively(obj: any): any {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    
+    if (Array.isArray(obj)) {
+        return obj.map(item => sortKeysRecursively(item));
+    }
+    
+    if (typeof obj !== "object") {
+        return obj;
+    }
+    
+    // Create a new object with sorted keys
+    const sorted: any = {};
+    const keys = Object.keys(obj).sort();
+    
+    for (const key of keys) {
+        sorted[key] = sortKeysRecursively(obj[key]);
+    }
+    
+    return sorted;
+}
+
 export async function hashDerivation(derivation: Omit<Derivation, "out"> & { name: string; version: string }): Promise<Derivation> {
     // Create a copy to sort keys or ensure deterministic serialization
     const { name, version, ...rest } = derivation;
@@ -34,8 +64,11 @@ export async function hashDerivation(derivation: Omit<Derivation, "out"> & { nam
         }
     }
 
-    // Deterministic JSON stringify (keys sorted)
-    const jsonString = JSON.stringify(toHash, Object.keys(toHash).sort());
+    // Sort all keys recursively to ensure deterministic serialization
+    const sortedToHash = sortKeysRecursively(toHash);
+    
+    // Deterministic JSON stringify (all keys sorted recursively)
+    const jsonString = JSON.stringify(sortedToHash);
 
     const encoder = new TextEncoder();
     const data = encoder.encode(jsonString);
