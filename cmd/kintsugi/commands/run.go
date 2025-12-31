@@ -90,10 +90,11 @@ var RunCmd = &cobra.Command{
 		if runSpec.Umu != nil {
 			// Execute via UMU
 			umuArgs := []string{
-				"run",
-				"--umu-version", runSpec.Umu.Version,
-				"--umu-appid", runSpec.Umu.ID,
-				runSpec.Entrypoint,
+				//"run",
+				//"--umu-version", runSpec.Umu.Version,
+				//"--umu-appid", runSpec.Umu.ID,
+				//runSpec.Entrypoint,
+				entrypointPath,
 			}
 			umuArgs = append(umuArgs, runSpec.Args...)
 			runCmd = exec.Command("umu-run", umuArgs...)

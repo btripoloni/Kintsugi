@@ -222,29 +222,44 @@ func buildWriteText(f *recipe.WriteText, dest string) error {
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dest, f.Path), []byte(f.Content), 0644)
+	fullPath := filepath.Join(dest, f.Path)
+	// Create parent directories if the path contains subdirectories
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(fullPath, []byte(f.Content), 0644)
 }
 
 func buildWriteJson(f *recipe.WriteJson, dest string) error {
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
 	}
+	fullPath := filepath.Join(dest, f.Path)
+	// Create parent directories if the path contains subdirectories
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(f.Content, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dest, f.Path), data, 0644)
+	return os.WriteFile(fullPath, data, 0644)
 }
 
 func buildWriteToml(f *recipe.WriteToml, dest string) error {
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
 	}
+	fullPath := filepath.Join(dest, f.Path)
+	// Create parent directories if the path contains subdirectories
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		return err
+	}
 	// Placeholder for TOML serialization.
 	// We'll need a TOML library or a simple implementation.
 	// For now, we'll write it as a simple string representation if it's a map.
 	content := fmt.Sprintf("# TOML (placeholder implementation)\n# Full implementation requires a TOML library\n%v\n", f.Content)
-	return os.WriteFile(filepath.Join(dest, f.Path), []byte(content), 0644)
+	return os.WriteFile(fullPath, []byte(content), 0644)
 }
 
 func buildGit(f *recipe.FetchGit, dest string) error {

@@ -102,9 +102,10 @@ export async function mkShard(shard: Omit<Derivation, "out">): Promise<Derivatio
 /**
  * Cria um manifesto de execução (.run.json) como um Shard completo.
  * Deve ser usado diretamente na lista de layers de uma mkComposition.
+ * O arquivo será criado em kintsugi/exec/[name].run.json
  */
 export interface RunSpecArgs {
-  path: string;
+  name: string; // Nome do perfil de execução (ex: "default", "editor")
   entrypoint: string;
   umu?: {
     version: string;
@@ -115,12 +116,14 @@ export interface RunSpecArgs {
 }
 
 export async function writeRunSpec(args: RunSpecArgs): Promise<Derivation> {
-  // Conforme a documentação, gera um shard com o manifesto no caminho especificado
+  // O caminho é sempre kintsugi/exec/[name].run.json
+  const path = `kintsugi/exec/${args.name}.run.json`;
+  
   return await mkShard({
-    name: `run-spec-${args.path.replace(/\//g, "-")}`,
+    name: `run-spec-${args.name}`,
     version: "1.0.0",
     src: sources.write_json({
-      path: args.path, // Geralmente "kintsugi/exec/..."
+      path,
       content: {
         entrypoint: args.entrypoint,
         umu: args.umu,

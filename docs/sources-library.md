@@ -153,10 +153,10 @@ Estas são funções auxiliares que geram Shards completos, contendo metadados p
 
 ### `writeRunSpec`
 
-Cria um manifesto de execução (`.run.json`) como um Shard. Este manifesto define como executar a composição, permitindo múltiplos perfis (ex: `default`, `editor`).
+Cria um manifesto de execução (`.run.json`) como um Shard. Este manifesto define como executar a composição, permitindo múltiplos perfis (ex: `default`, `editor`). O arquivo será sempre criado em `kintsugi/exec/[name].run.json`.
 
 -   **Parâmetros:**
-    -   `path: string`: Caminho do arquivo de manifesto (ex: `"kintsugi/exec/default.run.json"`).
+    -   `name: string`: Nome do perfil de execução (ex: `"default"`, `"editor"`). O arquivo será criado em `kintsugi/exec/[name].run.json`.
     -   `entrypoint: string`: O executável a ser iniciado.
     -   `umu?: object`: Configuração para execução via UMU (Proton/Wine).
         -   `id: string`: O AppID do Steam.
@@ -171,7 +171,7 @@ Cria um manifesto de execução (`.run.json`) como um Shard. Este manifesto defi
             skyrim,
             skse,
             writeRunSpec({
-                path: "kintsugi/exec/default.run.json",
+                name: "default",
                 entrypoint: "skse64_loader.exe",
                 umu: { version: "GE-Proton9-4", id: "489830" },
             }),

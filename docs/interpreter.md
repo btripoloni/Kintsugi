@@ -110,7 +110,7 @@ const finalComposition = await mkComposition({
     skse,
     // Adiciona o perfil de execução `default`
     writeRunSpec({
-        path: "kintsugi/exec/default.run.json",
+        name: "default",
         entrypoint: "skse64_loader.exe",
         umu: {
             version: "GE-Proton9-4",

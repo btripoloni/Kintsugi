@@ -34,7 +34,7 @@ export const skyrimModpack = mkComposition({
         patch,
         // Gera o perfil de execução padrão
         writeRunSpec({
-            path: "kintsugi/exec/default.run.json", // Caminho padronizado
+            name: "default", // O arquivo será criado em kintsugi/exec/default.run.json
             entrypoint: "skse64_loader.exe",
             umu: {
                 version: "GE-Proton9-4",
@@ -44,7 +44,7 @@ export const skyrimModpack = mkComposition({
         }),
         // Gera um perfil alternativo para o editor
         writeRunSpec({
-            path: "kintsugi/exec/editor.run.json",
+            name: "editor", // O arquivo será criado em kintsugi/exec/editor.run.json
             entrypoint: "CreationKit.exe",
             umu: {
                 version: "GE-Proton9-4",
