@@ -57,19 +57,20 @@ func (s *Store) GarbageCollect(ctx context.Context, dryRun bool) (*GCResult, err
 
 	// 6. Cleanup Orphaned Recipes
 	// A recipe is orphaned if no remaining derivations reference it.
-	// orphanedRecipes, err := s.getOrphanedRecipes(ctx)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to find orphaned recipes: %w", err)
-	// }
+	// This must run AFTER deleting derivations, so recipes from deleted derivations are also cleaned up.
+	orphanedRecipes, err := s.getOrphanedRecipes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find orphaned recipes: %w", err)
+	}
 
-	// for _, hash := range orphanedRecipes {
-	// 	result.DeletedRecipes = append(result.DeletedRecipes, hash)
-	// 	if !dryRun {
-	// 		if err := s.deleteRecipe(ctx, hash); err != nil {
-	// 			result.Errors = append(result.Errors, fmt.Errorf("failed to delete recipe %s: %w", hash, err))
-	// 		}
-	// 	}
-	// }
+	for _, hash := range orphanedRecipes {
+		result.DeletedRecipes = append(result.DeletedRecipes, hash)
+		if !dryRun {
+			if err := s.deleteRecipe(ctx, hash); err != nil {
+				result.Errors = append(result.Errors, fmt.Errorf("failed to delete recipe %s: %w", hash, err))
+			}
+		}
+	}
 
 	return result, nil
 }
