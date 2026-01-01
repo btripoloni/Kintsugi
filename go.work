@@ -1,0 +1,7 @@
+go 1.25.4
+
+use (
+	./cmd/kintsugi
+	./cmd/kintsugi-compiler
+	./internal
+)
