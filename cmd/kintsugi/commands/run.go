@@ -36,6 +36,7 @@ var RunCmd = &cobra.Command{
 		// Resolve the build path through "current build" symlink
 		modpackDir := filepath.Join(s.ModpacksPath(), modpackName)
 		currentLink := filepath.Join(modpackDir, "current build")
+		prefixDir := filepath.Join(modpackDir, "wine-prefix")
 
 		// Read "current build" symlink -> "[hash]-[name]-gen-N"
 		target, err := os.Readlink(currentLink)
@@ -93,7 +94,6 @@ var RunCmd = &cobra.Command{
 				//"run",
 				//"--umu-version", runSpec.Umu.Version,
 				//"--umu-appid", runSpec.Umu.ID,
-				//runSpec.Entrypoint,
 				entrypointPath,
 			}
 			umuArgs = append(umuArgs, runSpec.Args...)
@@ -113,6 +113,7 @@ var RunCmd = &cobra.Command{
 		env = append(env, fmt.Sprintf("KINTSUGI_ROOT=%s", storePath))
 		env = append(env, fmt.Sprintf("KINTSUGI_MODPACK_NAME=%s", modpackName))
 		env = append(env, fmt.Sprintf("KINTSUGI_BUILD_HASH=%s", hash))
+		env = append(env, fmt.Sprintf("WINEPREFIX=%s", prefixDir))
 
 		// Add environment variables from RunSpec
 		for key, value := range runSpec.Env {
