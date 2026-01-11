@@ -19,8 +19,6 @@
             gotools
             go-tools
             deno
-            sqlite
-            sqlite-interactive
             fuse-overlayfs
           ];
 
