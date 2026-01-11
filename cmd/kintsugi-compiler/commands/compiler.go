@@ -209,8 +209,8 @@ func buildURL(f *recipe.FetchUrl, dest string) error {
 
 	if f.Unpack {
 		fmt.Printf("  -> Unpacking %s to %s\n", filename, dest)
-		if err := unzip(destFile, dest); err != nil {
-			return fmt.Errorf("failed to unzip: %w", err)
+		if err := extractArchive(destFile, dest); err != nil {
+			return fmt.Errorf("failed to extract archive: %w", err)
 		}
 		os.Remove(destFile)
 	}
@@ -524,6 +524,34 @@ func globMatch(rootDir, pattern string) ([]string, error) {
 	})
 
 	return matches, err
+}
+
+func extractArchive(src, dest string) error {
+	// Determine the file extension to decide which extraction method to use
+	ext := strings.ToLower(filepath.Ext(src))
+
+	switch ext {
+	case ".zip":
+		return unzip(src, dest)
+	case ".7z":
+		return extract7z(src, dest)
+	default:
+		// For other extensions, try to determine based on magic bytes or file content
+		// For now, default to zip for backward compatibility
+		return unzip(src, dest)
+	}
+}
+
+func extract7z(src, dest string) error {
+	// Use the system's 7z command to extract the archive
+	cmd := exec.Command("7z", "x", "-o"+dest, src)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to extract 7z archive: %w, output: %s", err, string(output))
+	}
+
+	return nil
 }
 
 func unzip(src, dest string) error {
