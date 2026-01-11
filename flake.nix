@@ -21,6 +21,7 @@
             deno
             sqlite
             sqlite-interactive
+            fuse-overlayfs
           ];
 
           shellHook = ''

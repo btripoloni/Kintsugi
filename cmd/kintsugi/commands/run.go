@@ -5,13 +5,24 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"kintsugi/internal/recipe"
 	"kintsugi/internal/store"
 
 	"github.com/spf13/cobra"
 )
+
+func unmountSafe(path string) {
+	cmdName := "fusermount3"
+	if _, err := exec.LookPath(cmdName); err != nil {
+		cmdName = "fusermount"
+	}
+	// Usamos -z (lazy) para garantir que desmonte mesmo se o processo do jogo demorar a fechar
+	_ = exec.Command(cmdName, "-u", "-z", path).Run()
+}
 
 var RunCmd = &cobra.Command{
 	Use:   "run <modpack_name> [nome]",
@@ -37,6 +48,41 @@ var RunCmd = &cobra.Command{
 		modpackDir := filepath.Join(s.ModpacksPath(), modpackName)
 		currentLink := filepath.Join(modpackDir, "current build")
 		prefixDir := filepath.Join(modpackDir, "wine-prefix")
+
+		// Mount OverlayFS
+		upperLayerPath := filepath.Join(modpackDir, "upperlayer")
+		workLayerPath := filepath.Join(modpackDir, "worklayer")
+		mountLayerPath := filepath.Join(modpackDir, "mountlayer")
+		// mountCmd := exec.Command("mount", "-t", "overlay", "-o", "lowerdir="+currentLink, "-o", "upperdir="+upperLayerPath, "-o", "workdir="+workLayerPath, mountLayerPath)
+
+		dirs := []string{upperLayerPath, workLayerPath, mountLayerPath}
+		for _, d := range dirs {
+			if err := os.MkdirAll(d, 0755); err != nil {
+				fmt.Printf("Erro ao criar diretório %s: %v\n", d, err)
+				os.Exit(1)
+			}
+		}
+
+		options := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", currentLink, upperLayerPath, workLayerPath)
+		mountCmd := exec.Command("fuse-overlayfs", "-o", options, mountLayerPath)
+
+		out, err := mountCmd.CombinedOutput()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Erro ao montar overlayfs: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Log do erro: %s\n", string(out))
+			os.Exit(1)
+		}
+
+		done := make(chan os.Signal, 1)
+		signal.Notify(done, os.Interrupt, syscall.SIGTERM)
+
+		defer unmountSafe(mountLayerPath)
+
+		go func() {
+			<-done
+			unmountSafe(mountLayerPath)
+			os.Exit(0)
+		}()
 
 		// Read "current build" symlink -> "[hash]-[name]-gen-N"
 		target, err := os.Readlink(currentLink)
@@ -86,7 +132,7 @@ var RunCmd = &cobra.Command{
 
 		// Build the command
 		var runCmd *exec.Cmd
-		entrypointPath := filepath.Join(storePath, runSpec.Entrypoint)
+		entrypointPath := filepath.Join(mountLayerPath, runSpec.Entrypoint)
 
 		if runSpec.Umu != nil {
 			// Execute via UMU
@@ -132,7 +178,6 @@ var RunCmd = &cobra.Command{
 
 		if err := runCmd.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "Execution failed: %v\n", err)
-			os.Exit(1)
 		}
 	},
 }
