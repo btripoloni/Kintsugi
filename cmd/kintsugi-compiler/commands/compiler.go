@@ -95,6 +95,8 @@ func buildDerivation(s *store.Store, drv *recipe.Derivation) error {
 		return buildGit(f, storePath)
 	case *recipe.RunInBuild:
 		return buildRunInBuild(s, f, storePath)
+	case *recipe.BlankSource:
+		return buildBlankSource(f, storePath)
 	default:
 		return fmt.Errorf("unknown fetcher type: %s", drv.Src.Type())
 	}
@@ -303,6 +305,18 @@ func buildGit(f *recipe.FetchGit, dest string) error {
 	}
 
 	return runPostFetch(f.PostFetch, dest)
+}
+
+func buildBlankSource(f *recipe.BlankSource, dest string) error {
+	// Create an empty directory for the blank source
+	// This serves as a placeholder that can be filled with shards later
+	fmt.Printf("Creating blank source directory at %s\n", dest)
+
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return fmt.Errorf("failed to create blank source directory: %w", err)
+	}
+
+	return nil
 }
 
 func buildRunInBuild(s *store.Store, f *recipe.RunInBuild, dest string) error {

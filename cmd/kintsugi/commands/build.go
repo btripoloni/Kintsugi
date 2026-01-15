@@ -159,7 +159,14 @@ var BuildCmd = &cobra.Command{
 			modpackHash = rootHash[:32]
 		}
 
-		entries, _ := os.ReadDir(cwd)
+		// Register modpack in ~/.kintsugi/modpacks for GC to recognize
+		registeredModpackDir := filepath.Join(home, ".kintsugi", "modpacks", mpMeta.Name)
+		if err := os.MkdirAll(registeredModpackDir, 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create registered modpack dir: %v\n", err)
+			return
+		}
+
+		entries, _ := os.ReadDir(registeredModpackDir)
 		maxGen := 0
 		suffix := fmt.Sprintf("-%s-gen-", mpMeta.Name)
 
@@ -194,39 +201,17 @@ var BuildCmd = &cobra.Command{
 		}
 		storePath := filepath.Join(s.StorePath(), fullName)
 
-		// Create gen symlink
-		if err := os.Symlink(storePath, filepath.Join(cwd, linkName)); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create gen symlink: %v\n", err)
-		} else {
-			fmt.Printf("Created symlink: %s\n", linkName)
+		// Create symlinks in registered dir
+		registeredGenLink := filepath.Join(registeredModpackDir, linkName)
+		os.Remove(registeredGenLink) // Remove if exists
+		if err := os.Symlink(storePath, registeredGenLink); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create registered gen symlink: %v\n", err)
 		}
 
-		// Create/Update 'current build'
-		currentLink := filepath.Join(cwd, "current build")
-		os.Remove(currentLink) // Remove existing
-		if err := os.Symlink(linkName, currentLink); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create current build symlink: %v\n", err)
-		} else {
-			fmt.Printf("Created symlink: current build -> %s\n", linkName)
-		}
-
-		// Register modpack in ~/.kintsugi/modpacks for GC to recognize
-		registeredModpackDir := filepath.Join(home, ".kintsugi", "modpacks", mpMeta.Name)
-		if err := os.MkdirAll(registeredModpackDir, 0755); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create registered modpack dir: %v\n", err)
-		} else {
-			// Create symlinks in registered dir pointing to local build symlinks
-			registeredGenLink := filepath.Join(registeredModpackDir, linkName)
-			os.Remove(registeredGenLink) // Remove if exists
-			if err := os.Symlink(storePath, registeredGenLink); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to create registered gen symlink: %v\n", err)
-			}
-
-			registeredCurrentLink := filepath.Join(registeredModpackDir, "current build")
-			os.Remove(registeredCurrentLink)
-			if err := os.Symlink(linkName, registeredCurrentLink); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to create registered current build symlink: %v\n", err)
-			}
+		registeredCurrentLink := filepath.Join(registeredModpackDir, "current build")
+		os.Remove(registeredCurrentLink)
+		if err := os.Symlink(linkName, registeredCurrentLink); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create registered current build symlink: %v\n", err)
 		}
 
 		fmt.Printf("Active build for '%s' is now: %s\n", mpMeta.Name, linkName)

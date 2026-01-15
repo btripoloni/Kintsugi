@@ -1,5 +1,5 @@
 {
-  description = "Kintsugi Mod Manager Development Environment";
+  description = "Kintsugi Mod Manager";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,6 +12,26 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        packages = {
+          kintsugi = pkgs.buildGoModule {
+            pname = "kintsugi";
+            version = "0.1.0";
+            src = ./.;
+            vendorHash = "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="; # Update with actual hash from build
+            subPackages = [ "cmd/kintsugi" ];
+            propagatedBuildInputs = [ pkgs.deno ];
+          };
+          kintsugi-compiler = pkgs.buildGoModule {
+            pname = "kintsugi-compiler";
+            version = "0.1.0";
+            src = ./.;
+            vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # Placeholder, update after first build
+            subPackages = [ "cmd/kintsugi-compiler" ];
+            propagatedBuildInputs = [ pkgs.deno ];
+          };
+          default = self.packages.${system}.kintsugi;
+        };
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             go

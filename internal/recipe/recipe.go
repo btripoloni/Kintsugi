@@ -91,6 +91,12 @@ type RunInBuild struct {
 	Outputs []string          `json:"outputs"`
 }
 
+type BlankSource struct {
+	BaseFetcher
+	// This source is intentionally blank and ignored by the compiler
+	// It serves as a placeholder for shards to be inserted later
+}
+
 // RunSpec represents the content of a .run.json file created by writeRunSpec
 type RunSpec struct {
 	Entrypoint string            `json:"entrypoint"`
@@ -186,6 +192,12 @@ func (d *Derivation) UnmarshalJSON(data []byte) error {
 		src = &f
 	case "run_in_build":
 		var f RunInBuild
+		if err := json.Unmarshal(aux.Src, &f); err != nil {
+			return err
+		}
+		src = &f
+	case "blank_source":
+		var f BlankSource
 		if err := json.Unmarshal(aux.Src, &f); err != nil {
 			return err
 		}

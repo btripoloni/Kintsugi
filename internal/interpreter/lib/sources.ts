@@ -82,6 +82,12 @@ export const sources = {
       outputs: args.outputs,
     };
   },
+
+  blank_source: () => ({
+    type: "blank_source" as const,
+    // This source is intentionally blank and ignored by the compiler
+    // It serves as a placeholder for shards to be inserted later
+  }),
 };
 
 // --- Funções de Geração de Shards ---

@@ -69,6 +69,12 @@ export interface RunInBuild {
   outputs: string[];
 }
 
+export interface BlankSource {
+  type: "blank_source";
+  // This source is intentionally blank and ignored by the compiler
+  // It serves as a placeholder for shards to be inserted later
+}
+
 export type Source =
   | FetchUrl
   | FetchGit
@@ -78,7 +84,8 @@ export type Source =
   | WriteJson
   | WriteToml
   | FetchBuild
-  | RunInBuild;
+  | RunInBuild
+  | BlankSource;
 
 export interface Derivation {
     name: string;
