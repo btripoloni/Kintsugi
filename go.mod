@@ -1,3 +1,3 @@
-module btripoloni.kintsugi
+module kintsugi
 
 go 1.25.4

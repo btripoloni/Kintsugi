@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"btripoloni.mod-manager/internal/spec"
-	"btripoloni.mod-manager/internal/store"
+	"kintsugi/internal/store"
 )
 
 func TestCopy_File(t *testing.T) {
@@ -19,16 +18,15 @@ func TestCopy_File(t *testing.T) {
 	}
 
 	// 2. Setup Store
-	storeDir := filepath.Join(tmpDir, "store")
-	dbPath := filepath.Join(tmpDir, "db.sqlite")
-	sm, err := store.New(dbPath, storeDir)
+	storeDir := filepath.Join(tmpDir, ".kintsugi")
+	sm, err := store.NewStore(storeDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer sm.Close()
 
 	// 3. Define Step
-	step := spec.Step{
+	step := Step{
 		ID: "step_copy",
 		Op: "copy",
 		Params: map[string]interface{}{
@@ -45,7 +43,7 @@ func TestCopy_File(t *testing.T) {
 
 	// 5. Verify
 	hash, _ := step.Hash()
-	outPath := filepath.Join(sm.Path(hash), "output.txt")
+	outPath := filepath.Join(sm.StorePath(), hash, "output.txt")
 	verifyFileContent(t, outPath, "hello")
 }
 
@@ -59,16 +57,15 @@ func TestCopy_Dir(t *testing.T) {
 	os.WriteFile(filepath.Join(srcDir, "sub/b.txt"), []byte("B"), 0644)
 
 	// 2. Setup Store
-	storeDir := filepath.Join(tmpDir, "store")
-	dbPath := filepath.Join(tmpDir, "db.sqlite")
-	sm, err := store.New(dbPath, storeDir)
+	storeDir := filepath.Join(tmpDir, ".kintsugi")
+	sm, err := store.NewStore(storeDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer sm.Close()
 
 	// 3. Define Step
-	step := spec.Step{
+	step := Step{
 		ID: "step_copy_dir",
 		Op: "copy",
 		Params: map[string]interface{}{
@@ -85,8 +82,8 @@ func TestCopy_Dir(t *testing.T) {
 
 	// 5. Verify
 	hash, _ := step.Hash()
-	outDir := filepath.Join(sm.Path(hash), "copied_dir")
-	
+	outDir := filepath.Join(sm.StorePath(), hash, "copied_dir")
+
 	verifyFileContent(t, filepath.Join(outDir, "a.txt"), "A")
 	verifyFileContent(t, filepath.Join(outDir, "sub/b.txt"), "B")
 }

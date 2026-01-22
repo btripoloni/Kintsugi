@@ -3,11 +3,11 @@ package primitives
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
-	"btripoloni.mod-manager/internal/spec"
-	"btripoloni.mod-manager/internal/store"
+	"kintsugi/internal/store"
 )
 
 type Copy struct{}
@@ -16,7 +16,7 @@ func NewCopy() Action {
 	return &Copy{}
 }
 
-func (c *Copy) Execute(ctx context.Context, step spec.Step, sm *store.Manager) error {
+func (c *Copy) Execute(ctx context.Context, step Step, sm *store.Store) error {
 	// 1. Parse Params
 	src, ok := step.Params["source"].(string)
 	if !ok || src == "" {
@@ -41,24 +41,28 @@ func (c *Copy) Execute(ctx context.Context, step spec.Step, sm *store.Manager) e
 	}
 
 	// 4. Perform Copy
-	return sm.Write(hash, func(dir string) error {
-		// Destination is relative to the Step's output dir
-		// Prevent path traversal
-		destPath := filepath.Join(dir, dst)
-		if !isInDir(destPath, dir) {
-			return fmt.Errorf("destination outside output directory")
-		}
+	// Create output directory in store (using hash as directory name)
+	outputDir := filepath.Join(sm.StorePath(), hash)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
 
-		if info.IsDir() {
-			return copyDir(src, destPath)
-		}
-		
-		// Ensure parent dir exists
-		if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
-			return err
-		}
-		return copyFile(src, destPath)
-	})
+	// Destination is relative to the Step's output dir
+	// Prevent path traversal
+	destPath := filepath.Join(outputDir, dst)
+	if !isInDir(destPath, outputDir) {
+		return fmt.Errorf("destination outside output directory")
+	}
+
+	if info.IsDir() {
+		return copyDir(src, destPath)
+	}
+
+	// Ensure parent dir exists
+	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+		return err
+	}
+	return copyFile(src, destPath)
 }
 
 func isInDir(path, dir string) bool {
@@ -73,6 +77,29 @@ func isInDir(path, dir string) bool {
 
 func isParent(path string) bool {
 	return path == ".." || (len(path) >= 3 && path[:3] == "../")
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Get source file info for permissions
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
 
 func copyDir(src, dst string) error {

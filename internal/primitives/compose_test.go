@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"btripoloni.mod-manager/internal/spec"
-	"btripoloni.mod-manager/internal/store"
+	"kintsugi/internal/store"
 )
 
 func TestCompose_Success(t *testing.T) {
@@ -19,16 +18,15 @@ func TestCompose_Success(t *testing.T) {
 	}
 
 	// 2. Setup Store
-	storeDir := filepath.Join(tmpDir, "store")
-	dbPath := filepath.Join(tmpDir, "db.sqlite")
-	sm, err := store.New(dbPath, storeDir)
+	storeDir := filepath.Join(tmpDir, ".kintsugi")
+	sm, err := store.NewStore(storeDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer sm.Close()
 
 	// 3. Define Step
-	step := spec.Step{
+	step := Step{
 		ID: "step_compose",
 		Op: "compose",
 		Params: map[string]interface{}{
@@ -46,9 +44,9 @@ func TestCompose_Success(t *testing.T) {
 
 	// 5. Verify
 	hash, _ := step.Hash()
-	outDir := sm.Path(hash)
+	outDir := filepath.Join(sm.StorePath(), hash)
 	linkPath := filepath.Join(outDir, "link.txt")
-	
+
 	// Check if it is a symlink
 	info, err := os.Lstat(linkPath)
 	if err != nil {

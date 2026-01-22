@@ -10,8 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"btripoloni.mod-manager/internal/spec"
-	"btripoloni.mod-manager/internal/store"
+	"kintsugi/internal/store"
 )
 
 type Extract struct{}
@@ -20,7 +19,7 @@ func NewExtract() Action {
 	return &Extract{}
 }
 
-func (e *Extract) Execute(ctx context.Context, step spec.Step, sm *store.Manager) error {
+func (e *Extract) Execute(ctx context.Context, step Step, sm *store.Store) error {
 	// 1. Parse Params
 	path, ok := step.Params["file"].(string)
 	if !ok || path == "" {
@@ -43,10 +42,14 @@ func (e *Extract) Execute(ctx context.Context, step spec.Step, sm *store.Manager
 		return fmt.Errorf("failed to calculate hash: %w", err)
 	}
 
-	// 4. Perform Extraction into Store
-	return sm.Write(hash, func(dir string) error {
-		return extractArchiveFromPath(path, dir)
-	})
+	// 4. Create output directory in store
+	outputDir := filepath.Join(sm.StorePath(), hash)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// 5. Perform Extraction into Store
+	return extractArchiveFromPath(path, outputDir)
 }
 
 func extractArchiveFromPath(src, dest string) error {

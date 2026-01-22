@@ -36,56 +36,33 @@ var BuildCmd = &cobra.Command{
 
 		home, _ := os.UserHomeDir()
 
-		interpreterPath, err := interpreter.EnsureInterpreter()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to ensure interpreter: %v\n", err)
-			os.Exit(1)
-		}
-
 		denoBin, err := interpreter.EnsureDeno()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to ensure Deno: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Create explicit Import Map
-		// We map "kintsugi/" -> interpreterDir/
-		// interpreterPath is ".../mod.ts", so dir is Dir(interpreterPath)
-		interpreterDir := filepath.Dir(interpreterPath)
-
-		// Use a file URL for the import map target
-		interpreterDirUrl := fmt.Sprintf("file://%s/", interpreterDir)
-
-		importMap := map[string]interface{}{
-			"imports": map[string]string{
-				"kintsugi/": interpreterDirUrl,
-			},
-		}
-
-		importMapData, err := json.Marshal(importMap)
+		// Create temporary runner script from embedded content
+		runnerScript := interpreter.GetRunnerScript()
+		tmpRunner, err := os.CreateTemp("", "kintsugi_runner_*.ts")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create import map: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to create temp runner: %v\n", err)
+			os.Exit(1)
+		}
+		defer os.Remove(tmpRunner.Name())
+
+		if _, err := tmpRunner.Write(runnerScript); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to write runner: %v\n", err)
+			os.Exit(1)
+		}
+		if err := tmpRunner.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to close runner: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Write import map to a temp file
-		tmpFile, err := os.CreateTemp("", "kintsugi_import_map_*.json")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create temp import map: %v\n", err)
-			os.Exit(1)
-		}
-		defer os.Remove(tmpFile.Name()) // Clean up
+		runnerPath := tmpRunner.Name()
 
-		if _, err := tmpFile.Write(importMapData); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to write import map: %v\n", err)
-			os.Exit(1)
-		}
-		if err := tmpFile.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to close import map file: %v\n", err)
-			os.Exit(1)
-		}
-
-		denoCmd := exec.Command(denoBin, "run", "--allow-read", "--allow-write", "--allow-env", "--import-map", tmpFile.Name(), interpreterPath, cwd)
+		denoCmd := exec.Command(denoBin, "run", "--allow-read", "--allow-write", "--allow-env", runnerPath, cwd)
 		output, err := denoCmd.Output()
 		if err != nil {
 			if exitErr, ok := err.(*exec.ExitError); ok {

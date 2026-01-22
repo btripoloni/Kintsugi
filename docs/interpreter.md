@@ -4,10 +4,9 @@ O interpretador é responsável por executar expressões TypeScript e gerar rece
 
 ## 1. Visão Geral
 
-O interpretador usa Deno como runtime, executado pelo executor via:
-```bash
-deno run --allow-read --allow-write interpreter/mod.ts <caminho-do-modpack>
-```
+O interpretador usa Deno como runtime e a biblioteca TypeScript está disponível como um pacote JSR: `jsr:@btripoloni/kintsugi`.
+
+A biblioteca é importada automaticamente quando você cria um novo modpack com `kintsugi init`, que gera um `deno.json` configurado corretamente.
 
 ## 2. Entrada e Saída
 
@@ -28,7 +27,27 @@ deno run --allow-read --allow-write interpreter/mod.ts <caminho-do-modpack>
 
 ## 3. API de Expressões
 
-As expressões usam funções fornecidas pela biblioteca padrão do Kintsugi.
+As expressões usam funções fornecidas pela biblioteca padrão do Kintsugi, disponível no pacote JSR `jsr:@btripoloni/kintsugi`.
+
+### Instalação
+
+A biblioteca é automaticamente configurada quando você cria um novo modpack com `kintsugi init`. O `deno.json` gerado inclui:
+
+```json
+{
+  "imports": {
+    "kintsugi/": "jsr:@btripoloni/kintsugi@1.0.0/"
+  }
+}
+```
+
+Para usar a biblioteca, importe do módulo principal:
+
+```typescript
+import { mkShard, mkComposition, sources, mkLocal, mkUrl, mkBuild } from "kintsugi/mod.ts";
+```
+
+Para mais informações sobre a biblioteca, consulte o [README do pacote JSR](https://jsr.io/@btripoloni/kintsugi).
 
 ### 3.1 `mkShard`
 
@@ -84,7 +103,7 @@ As funções `mkShard`, `mkComposition`, `writeRunSpec`, `sources` e `bootstrap`
 
 ```typescript
 // main.ts
-import { mkShard, mkComposition, writeRunSpec, sources, bootstrap } from "kintsugi";
+import { mkShard, mkComposition, writeRunSpec, sources } from "kintsugi/mod.ts";
 
 const skyrim = await mkShard({
   name: "skyrim-se",
@@ -103,13 +122,13 @@ const skse = await mkShard({
   dependencies: [skyrim],
 });
 
-const finalComposition = await mkComposition({
+export default await mkComposition({
   name: "meu-modpack",
   layers: [
     skyrim,
     skse,
     // Adiciona o perfil de execução `default`
-    writeRunSpec({
+    await writeRunSpec({
         name: "default",
         entrypoint: "skse64_loader.exe",
         umu: {
@@ -119,6 +138,4 @@ const finalComposition = await mkComposition({
     }),
   ],
 });
-
-bootstrap(finalComposition);
 ```

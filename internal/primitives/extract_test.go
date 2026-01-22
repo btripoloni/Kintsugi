@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"btripoloni.mod-manager/internal/spec"
-	"btripoloni.mod-manager/internal/store"
+	"kintsugi/internal/store"
 )
 
 func TestExtract_Success(t *testing.T) {
@@ -16,21 +15,20 @@ func TestExtract_Success(t *testing.T) {
 	tmpDir := t.TempDir()
 	zipPath := filepath.Join(tmpDir, "test.zip")
 	createZip(t, zipPath, map[string]string{
-		"file1.txt":      "content1",
-		"sub/file2.txt":  "content2",
+		"file1.txt":     "content1",
+		"sub/file2.txt": "content2",
 	})
 
 	// 2. Setup Store
-	storeDir := filepath.Join(tmpDir, "store")
-	dbPath := filepath.Join(tmpDir, "db.sqlite")
-	sm, err := store.New(dbPath, storeDir)
+	storeDir := filepath.Join(tmpDir, ".kintsugi")
+	sm, err := store.NewStore(storeDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer sm.Close()
 
 	// 3. Define Step
-	step := spec.Step{
+	step := Step{
 		ID: "step_extract",
 		Op: "extract",
 		Params: map[string]interface{}{
@@ -46,7 +44,7 @@ func TestExtract_Success(t *testing.T) {
 
 	// 5. Verify Output
 	hash, _ := step.Hash()
-	outDir := sm.Path(hash)
+	outDir := filepath.Join(sm.StorePath(), hash)
 
 	verifyFileContent(t, filepath.Join(outDir, "file1.txt"), "content1")
 	verifyFileContent(t, filepath.Join(outDir, "sub/file2.txt"), "content2")

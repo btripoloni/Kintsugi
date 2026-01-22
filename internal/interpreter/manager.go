@@ -2,10 +2,9 @@ package interpreter
 
 import (
 	"archive/zip"
-	"embed"
+	_ "embed"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -13,27 +12,11 @@ import (
 	"runtime"
 )
 
-//go:embed *
-var embeddedFS embed.FS
+//go:embed runner.ts
+var runnerScript []byte
 
 const denoVersion = "v1.46.0"
-
-// EnsureInterpreter ensures that the embedded interpreter files are extracted to the target directory.
-// It returns the path to the interpreter's mod.ts file.
-func EnsureInterpreter() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user home dir: %w", err)
-	}
-
-	targetDir := filepath.Join(home, ".kintsugi", "interpreter")
-
-	if err := extractFS(embeddedFS, targetDir); err != nil {
-		return "", fmt.Errorf("failed to extract interpreter: %w", err)
-	}
-
-	return filepath.Join(targetDir, "mod.ts"), nil
-}
+const kintsugiPackageVersion = "1.0.0"
 
 // EnsureDeno checks for Deno in PATH or ~/.kintsugi/bin/deno.
 // If not found, it downloads and installs it.
@@ -167,39 +150,12 @@ func downloadDeno(destDir, finalPath string) error {
 	return nil
 }
 
-func extractFS(f fs.FS, targetDir string) error {
-	return fs.WalkDir(f, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+// GetKintsugiPackageVersion returns the version of the kintsugi JSR package to use.
+func GetKintsugiPackageVersion() string {
+	return kintsugiPackageVersion
+}
 
-		if path == "." {
-			return nil
-		}
-
-		if filepath.Ext(path) == ".go" {
-			return nil
-		}
-
-		targetPath := filepath.Join(targetDir, path)
-
-		if d.IsDir() {
-			return os.MkdirAll(targetPath, 0755)
-		}
-
-		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
-			return err
-		}
-
-		data, err := fs.ReadFile(f, path)
-		if err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(targetPath, data, 0644); err != nil {
-			return err
-		}
-
-		return nil
-	})
+// GetRunnerScript returns the embedded runner script content.
+func GetRunnerScript() []byte {
+	return runnerScript
 }
