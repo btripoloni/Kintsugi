@@ -40,42 +40,33 @@ var InitCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Create .kintsugi/types directory
-		typesDir := filepath.Join(modpackDir, ".kintsugi", "types")
-		if err := os.MkdirAll(typesDir, 0755); err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating types directory: %v\n", err)
-			os.Exit(1)
-		}
+		// Get the kintsugi package version
+		packageVersion := interpreter.GetKintsugiPackageVersion()
 
-		// Inject embedded TypeScript files
-		err = interpreter.ExtractAssets(interpreter.InterpreterAssets, typesDir)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error injecting types: %v\n", err)
-			os.Exit(1)
-		}
-
-		// Create deno.json
-		denoJson := `{
+		// Create deno.json with JSR package import
+		denoJson := fmt.Sprintf(`{
 	"imports": {
-		"kintsugi/": "./.kintsugi/types/"
+		"kintsugi/": "jsr:@btripoloni/kintsugi@%s/"
 	}
-}`
+}`, packageVersion)
 		if err := os.WriteFile(filepath.Join(modpackDir, "deno.json"), []byte(denoJson), 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing deno.json: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Create main.ts with kintsugi import
-		mainTs := fmt.Sprintf(`import { mkLocal, mkUrl, mkBuild } from "kintsugi/mod.ts";
+		// Create main.ts with kintsugi import from JSR package
+		mainTs := fmt.Sprintf(`import * as kintsugi from "jsr:@btripoloni/kintsugi";
 
 // Define your modpack here
-const game = await mkLocal({
+const game = await kintsugi.mkShard({
     name: "game",
     version: "1.0.0",
-    path: "/path/to/game"
+    src: kintsugi.sources.fetch_local({
+        path: "/path/to/game"
+    })
 });
 
-export default mkBuild({
+export default kintsugi.mkComposition({
     name: "%s",
     layers: [game],
     // version: "0.0.1"
