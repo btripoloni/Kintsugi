@@ -105,6 +105,8 @@ var BuildCmd = &cobra.Command{
 		compilerCmd.Stdout = os.Stdout
 		compilerCmd.Stderr = os.Stderr
 		compilerCmd.Env = os.Environ()
+		// Pass modpack path to compiler so fetch_local can resolve relative paths
+		compilerCmd.Env = append(compilerCmd.Env, fmt.Sprintf("KINTSUGI_MODPACK_PATH=%s", cwd))
 
 		if err := compilerCmd.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "Compiler failed: %v\n", err)
