@@ -1,6 +1,6 @@
-import { join } from "jsr:@std/path";
-import { ensureDir } from "jsr:@std/fs";
-import { Derivation } from "jsr:@btripoloni/kintsugi@1.0.0/mod.ts";
+import { join } from "jsr:@std/path@1";
+import { ensureDir } from "jsr:@std/fs@1";
+import { Derivation } from "jsr:@btripoloni/kintsugi";
 
 async function main() {
     const args = Deno.args;
