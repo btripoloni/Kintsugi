@@ -126,6 +126,20 @@ func buildLocal(f *recipe.FetchLocal, dest string) error {
 		return fmt.Errorf("local source missing 'path'")
 	}
 
+	// If path is relative, resolve it relative to modpack directory
+	if !filepath.IsAbs(srcPath) {
+		modpackPath := os.Getenv("KINTSUGI_MODPACK_PATH")
+		if modpackPath == "" {
+			// Fallback: try to get current working directory
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("failed to resolve relative path: no modpack path and cannot get CWD: %w", err)
+			}
+			modpackPath = cwd
+		}
+		srcPath = filepath.Join(modpackPath, srcPath)
+	}
+
 	// Validate src exists
 	info, err := os.Stat(srcPath)
 	if err != nil {
