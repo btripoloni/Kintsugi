@@ -14,6 +14,11 @@ Kintsugi is a tool that allows you to create and manage game modpacks declarativ
 - **TypeScript**: Define your modpacks using a familiar and powerful language
 - **Dependency Management**: The system automatically resolves dependencies between mods and tools
 
+# Warning
+90% of this code was made using AI (Gemini + Cursor ) as a proof of concept.
+The plan is re-write the code with time for the next versions, but the actual state is good enough to test.
+This project is on a Alpha stage.
+
 ## Installation
 
 ### Prerequisites
@@ -27,10 +32,17 @@ Kintsugi is a tool that allows you to create and manage game modpacks declarativ
 If you have Nix installed with flakes enabled:
 
 ```bash
-# Install Kintsugi
+# Install Kintsugi (includes both executor and compiler)
+nix profile install github:btripoloni/kintsugi#default
+```
+
+Or install the packages separately if needed:
+
+```bash
+# Install only the executor
 nix profile install github:btripoloni/kintsugi#kintsugi
 
-# Install Kintsugi Compiler
+# Install only the compiler
 nix profile install github:btripoloni/kintsugi#kintsugi-compiler
 ```
 

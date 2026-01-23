@@ -12,7 +12,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        packages = {
+        packages = let
           kintsugi = pkgs.buildGoModule {
             pname = "kintsugi";
             version = "0.1.0";
@@ -29,7 +29,13 @@
             subPackages = [ "cmd/kintsugi-compiler" ];
             propagatedBuildInputs = [ pkgs.deno ];
           };
-          default = self.packages.${system}.kintsugi;
+        in {
+          kintsugi = kintsugi;
+          kintsugi-compiler = kintsugi-compiler;
+          default = pkgs.symlinkJoin {
+            name = "kintsugi-full";
+            paths = [ kintsugi kintsugi-compiler ];
+          };
         };
 
         devShells.default = pkgs.mkShell {
