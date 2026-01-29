@@ -46,6 +46,7 @@
             go-tools
             deno
             fuse-overlayfs
+            7zip
           ];
 
           shellHook = ''
