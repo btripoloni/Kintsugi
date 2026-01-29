@@ -76,30 +76,38 @@ func buildDerivation(s *store.Store, drv *recipe.Derivation) error {
 		return nil
 	}
 
+	var buildErr error
 	switch f := drv.Src.(type) {
 	case *recipe.FetchLocal:
-		return buildLocal(f, storePath)
+		buildErr = buildLocal(f, storePath)
 	case *recipe.FetchBuild:
-		return buildComposite(s, f, storePath)
+		buildErr = buildComposite(s, f, storePath)
 	case *recipe.FetchUrl:
-		return buildURL(f, storePath)
+		buildErr = buildURL(f, storePath)
 	case *recipe.FetchVase:
-		return buildVase(s, f, storePath)
+		buildErr = buildVase(s, f, storePath)
 	case *recipe.WriteText:
-		return buildWriteText(f, storePath)
+		buildErr = buildWriteText(f, storePath)
 	case *recipe.WriteJson:
-		return buildWriteJson(f, storePath)
+		buildErr = buildWriteJson(f, storePath)
 	case *recipe.WriteToml:
-		return buildWriteToml(f, storePath)
+		buildErr = buildWriteToml(f, storePath)
 	case *recipe.FetchGit:
-		return buildGit(f, storePath)
+		buildErr = buildGit(f, storePath)
 	case *recipe.RunInBuild:
-		return buildRunInBuild(s, f, storePath)
+		buildErr = buildRunInBuild(s, f, storePath)
 	case *recipe.BlankSource:
-		return buildBlankSource(f, storePath)
+		buildErr = buildBlankSource(f, storePath)
 	default:
 		return fmt.Errorf("unknown fetcher type: %s", drv.Src.Type())
 	}
+
+	if buildErr != nil {
+		return buildErr
+	}
+
+	// Execute postbuild script after successful build
+	return runPostbuild(drv.Postbuild, storePath)
 }
 
 func buildVase(s *store.Store, f *recipe.FetchVase, dest string) error {
@@ -228,7 +236,11 @@ func buildURL(f *recipe.FetchUrl, dest string) error {
 		if err := extractArchive(destFile, dest); err != nil {
 			return fmt.Errorf("failed to extract archive: %w", err)
 		}
-		os.Remove(destFile)
+		// Remove the archive file after successful extraction
+		if err := os.Remove(destFile); err != nil {
+			return fmt.Errorf("failed to remove archive file after extraction: %w", err)
+		}
+		fmt.Printf("  -> Removed archive file %s\n", filename)
 	}
 
 	return runPostFetch(f.PostFetch, dest)
@@ -571,8 +583,19 @@ func extractArchive(src, dest string) error {
 }
 
 func extract7z(src, dest string) error {
+	// Ensure destination directory exists
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
 	// Use the system's 7z command to extract the archive
-	cmd := exec.Command("7z", "x", "-o"+dest, src)
+	// The -o flag requires the path to end with a separator or be followed by a space
+	// We'll use -o followed by the path with a trailing separator
+	destWithSep := dest
+	if !strings.HasSuffix(destWithSep, string(os.PathSeparator)) {
+		destWithSep = destWithSep + string(os.PathSeparator)
+	}
+	cmd := exec.Command("7z", "x", "-o"+destWithSep, "-y", src)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -706,6 +729,21 @@ func runPostFetch(script string, dir string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func runPostbuild(script string, dir string) error {
+	if script == "" {
+		return nil
+	}
+	fmt.Printf("  -> Running postbuild script...\n")
+	cmd := exec.Command("sh", "-c", script)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("postbuild script failed: %w", err)
+	}
+	return nil
 }
 
 func copyFile(src, dst string) error {
