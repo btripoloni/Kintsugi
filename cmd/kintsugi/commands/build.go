@@ -62,7 +62,17 @@ var BuildCmd = &cobra.Command{
 
 		runnerPath := tmpRunner.Name()
 
-		denoCmd := exec.Command(denoBin, "run", "--allow-read", "--allow-write", "--allow-env", runnerPath, cwd)
+		// IMPORTANT: ensure the modpack's deno.json is considered.
+		// The runner script is created in a temp dir, so relying on auto-discovery from runnerPath
+		// would ignore the modpack config. We run with Dir=cwd and pass --config explicitly when present.
+		denoArgs := []string{"run", "--allow-read", "--allow-write", "--allow-env"}
+		denoJsonPath := filepath.Join(cwd, "deno.json")
+		if _, err := os.Stat(denoJsonPath); err == nil {
+			denoArgs = append(denoArgs, "--config", denoJsonPath)
+		}
+		denoArgs = append(denoArgs, runnerPath, cwd)
+		denoCmd := exec.Command(denoBin, denoArgs...)
+		denoCmd.Dir = cwd
 		output, err := denoCmd.Output()
 		if err != nil {
 			if exitErr, ok := err.(*exec.ExitError); ok {
