@@ -83,6 +83,8 @@ func buildDerivation(s *store.Store, drv *recipe.Derivation) error {
 	case *recipe.FetchBuild:
 		buildErr = buildComposite(s, f, storePath)
 	case *recipe.FetchUrl:
+		// Debug: log the FetchUrl structure
+		fmt.Printf("  -> FetchUrl: URL=%s, Unpack=%v, PostFetch=%q\n", f.URL, f.Unpack, f.PostFetch)
 		buildErr = buildURL(f, storePath)
 	case *recipe.FetchVase:
 		buildErr = buildVase(s, f, storePath)
@@ -214,13 +216,18 @@ func buildURL(f *recipe.FetchUrl, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
 	hasher := sha256.New()
 	reader := io.TeeReader(resp.Body, hasher)
 
 	if _, err := io.Copy(out, reader); err != nil {
+		out.Close()
 		return err
+	}
+
+	// Close the file explicitly before verifying hash and extracting
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("failed to close downloaded file: %w", err)
 	}
 
 	sum := hex.EncodeToString(hasher.Sum(nil))
@@ -230,6 +237,9 @@ func buildURL(f *recipe.FetchUrl, dest string) error {
 	}
 
 	fmt.Printf("  -> Verified hash %s\n", sum)
+
+	// Debug: log the Unpack value
+	fmt.Printf("  -> Unpack flag: %v\n", f.Unpack)
 
 	if f.Unpack {
 		fmt.Printf("  -> Unpacking %s to %s\n", filename, dest)
@@ -241,6 +251,8 @@ func buildURL(f *recipe.FetchUrl, dest string) error {
 			return fmt.Errorf("failed to remove archive file after extraction: %w", err)
 		}
 		fmt.Printf("  -> Removed archive file %s\n", filename)
+	} else {
+		fmt.Printf("  -> Skipping unpack (Unpack=false)\n")
 	}
 
 	return runPostFetch(f.PostFetch, dest)
