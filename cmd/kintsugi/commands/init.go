@@ -46,7 +46,7 @@ var InitCmd = &cobra.Command{
 		// Create deno.json with JSR package import
 		denoJson := fmt.Sprintf(`{
 	"imports": {
-		"kintsugi/": "jsr:@btripoloni/kintsugi@%s/"
+		"@btripoloni/kintsugi": "jsr:@btripoloni/kintsugi@%s/"
 	}
 }`, packageVersion)
 		if err := os.WriteFile(filepath.Join(modpackDir, "deno.json"), []byte(denoJson), 0644); err != nil {
@@ -55,13 +55,13 @@ var InitCmd = &cobra.Command{
 		}
 
 		// Create main.ts with kintsugi import from JSR package
-		mainTs := fmt.Sprintf(`import * as kintsugi from "jsr:@btripoloni/kintsugi";
+		mainTs := fmt.Sprintf(`import { mkShard, mkComposition, sources } from "@btripoloni/kintsugi";
 
 // Define your modpack here
-const game = await kintsugi.mkShard({
+const game = await mkShard({
     name: "game",
     version: "1.0.0",
-    src: kintsugi.sources.fetch_local({
+    src: sources.fetch_local({
         path: "/path/to/game"
     })
 });
