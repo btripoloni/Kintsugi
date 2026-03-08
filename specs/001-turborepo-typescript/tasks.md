@@ -36,12 +36,12 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 **Purpose**: Core package configuration that MUST be complete before library implementation
 
-- [ ] T006 Create `packages/kitsugi/package.json` with name "kitsugi", version "0.1.0", and proper scripts
-- [ ] T007 [P] Create `packages/kitsugi/tsconfig.json` with strict TypeScript configuration
-- [ ] T008 [P] Create `packages/kitsugi/tsconfig.build.json` for build-specific TypeScript config
-- [ ] T009 Create `packages/kitsugi/src/index.ts` with minimal exports structure
-- [ ] T010 Create `packages/kitsugi/tests/index.test.ts` with basic test to verify TDD setup works
-- [ ] T011 Verify `turbo run build` successfully builds the kitsugi package
+- [X] T006 Create `packages/kitsugi/package.json` with name "kitsugi", version "0.1.0", and proper scripts
+- [X] T007 [P] Create `packages/kitsugi/tsconfig.json` with strict TypeScript configuration
+- [X] T008 [P] Create `packages/kitsugi/tsconfig.build.json` for build-specific TypeScript config
+- [X] T009 Create `packages/kitsugi/src/index.ts` with minimal exports structure
+- [X] T010 Create `packages/kitsugi/tests/index.test.ts` with basic test to verify TDD setup works
+- [X] T011 Verify `turbo run build` successfully builds the kitsugi package
 
 ---
 
