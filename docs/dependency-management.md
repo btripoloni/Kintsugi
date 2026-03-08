@@ -6,38 +6,16 @@ inspirado no Nix, onde cada mod declara suas próprias dependências.
 
 ## 1. O Problema: Camadas Manuais
 
-No modelo antigo, para compor um modpack, o usuário precisava definir cada `Shard` individualmente e depois listá-los manualmente na ordem de carregamento correta dentro da `mkComposition`.
+No modelo antigo, para compor um modlist, o usuário precisava definir cada `Shard` individualmente e depois listá-los manualmente na ordem de carregamento correta dentro da `composição`.
 
-```typescript
-// Antigo (Manual)
-import { mkShard, mkComposition, sources } from "kintsugi";
-
-// Shards são definidos sem conhecimento de suas dependências internas.
-const game = await mkShard({
-    name: "skyrim-se",
-    version: "1.6.117",
-    src: sources.fetch_vase({ vase: "skyrim-se-1.6.117" }),
-});
-const modA = await mkShard({
-    name: "Mod A", // Ex: SKSE
-    version: "1.0",
-    src: sources.fetch_url({ url: "https://example.com/mod_a.zip", sha256: "..." }),
-});
-const modB = await mkShard({
-    name: "Mod B", // Ex: Um mod que depende do SKSE
-    version: "1.0",
-    src: sources.fetch_url({ url: "https://example.com/mod_b.zip", sha256: "..." }),
-});
-
-// O usuário precisa saber que B depende de A, e A depende do jogo,
-// e listar tudo na ordem correta.
-const modpack = await mkComposition({
-    name: "MeuPackManual",
-    layers: [game, modA, modB]
-});
+```text
+Mods: [Game, ModA, ModB, MobC]
+Composition:
+  Name: "modlist"
+  layeys: [Game, ModC, ModA, ModB]
 ```
 
-Isso se torna insustentável em modpacks grandes. Se o `Mod B` depende do `Mod A`, essa informação deve estar contida na definição do `Mod B`.
+Isso se torna insustentável em modlists grandes. Se o `Mod B` depende do `Mod A`, essa informação deve estar contida na definição do `Mod B`.
 
 ## 2. Proposta: Dependências Declarativas
 
@@ -45,56 +23,23 @@ Cada `Shard` agora declara suas próprias dependências. O sistema é responsáv
 
 ### 2.1 Estrutura do Shard
 
-Conforme definido em [Shards](./shards.md), a interface `ShardOptions` inclui um campo `dependencies`.
-
-```typescript
-export interface ShardOptions {
-    name: string;
-    version: string;
-    src: Source;
-    dependencies?: Shard[];
-    // ...
-}
+Conforme definido em [Shards](./shards.md), os chards incluem um campo `dependencies`.
 ```
 
 ### 2.2 Exemplo de Uso
 
 Agora, as dependências são declaradas diretamente no `Shard` que precisa delas.
 
-```typescript
-import { mkShard, mkComposition, sources, bootstrap } from "kintsugi";
+```text
+Mods: [Game, ModA, ModB, MobC]
 
-// O jogo base, sem dependências
-const game = await mkShard({
-    name: "skyrim-se",
-    version: "1.6.117",
-    src: sources.fetch_vase({ vase: "skyrim-se-1.6.117" }),
-});
+ModB:
+  name: "modB"
+  dependencies: [ModA]
 
-// Mod A declara sua dependência no jogo
-const modA = await mkShard({
-    name: "Mod A",
-    version: "1.0",
-    src: sources.fetch_url({ url: "https://example.com/mod_a.zip", sha256: "..." }),
-    dependencies: [game],
-});
-
-// Mod B declara sua dependência no Mod A
-const modB = await mkShard({
-    name: "Mod B",
-    version: "1.0",
-    src: sources.fetch_url({ url: "https://example.com/mod_b.zip", sha256: "..." }),
-    dependencies: [modA],
-});
-
-// O interpretador resolve a árvore (game -> modA -> modB) automaticamente.
-// Apenas o "topo" do grafo é necessário para compor o modpack.
-const modpack = await mkComposition({
-    name: "MeuPackResolvido",
-    layers: [modB] 
-});
-
-bootstrap(modpack);
+Composition:
+  Name: "modlist"
+  layeys: [Game, ModC, ModB]
 ```
 
 ## 3. Algoritmo de Resolução
@@ -109,7 +54,7 @@ O Kintsugi utiliza um algoritmo de **Ordenação Topológica** para transformar 
 
 ### 3.2 Fluxo no Interpretador
 
-1.  Usuário chama `mkComposition({ layers: [modB] })`.
+1.  Usuário chama `Composition( layers: [modB] )`.
 2.  O interpretador analisa `modB` e suas `dependencies` recursivamente (usando uma busca em profundidade - DFS).
 3.  Ele constrói um grafo de todos os Shards únicos.
 4.  Gera uma lista ordenada onde as dependências vêm **antes** dos dependentes.
@@ -117,11 +62,6 @@ O Kintsugi utiliza um algoritmo de **Ordenação Topológica** para transformar 
 
 ## 4. Vantagens
 
-- **Modularidade**: Mods podem ser compartilhados entre diferentes modpacks sem que o usuário precise conhecer sua árvore de dependências interna.
+- **Modularidade**: Mods podem ser compartilhados entre diferentes modlists sem que o usuário precise conhecer sua árvore de dependências interna.
 - **Segurança**: Garante que nenhum mod seja carregado sem que suas dependências (como loaders ou scripts) estejam presentes.
 - **Imutabilidade**: O hash de um Shard agora reflete toda a sua árvore de dependências, garantindo que se uma dependência mudar, o Shard dependente também terá um novo hash.
-
----
-
-> [!IMPORTANT]
-> Esta mudança move a inteligência de resolução de dependências do **usuário** para o **Interpretador (Deno)**, mantendo o **Compilador (Go)** focado apenas na execução eficiente das camadas via links físicos.

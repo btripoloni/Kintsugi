@@ -8,9 +8,16 @@ Um Shard é uma receita que, quando "realizada" pelo compilador, produz um diret
 
 Como os Shards são determinísticos, se a receita permanecer a mesma, o caminho e o conteúdo da saída também permanecerão os mesmos.
 
+### Shard Characteristics
+
+- **Deterministic**: The same Shard always produces the same result
+- **Hash-Identified**: Each Shard has a unique hash based on its inputs (name, version, source, dependencies, etc.)
+- **Stored in Store**: Once built, a Shard resides in `~/.kintsugi/store/[hash]-[name]-[version]`
+- **Immutable**: Once in the Store, a Shard cannot be modified
+
 ## 2. Estrutura de um Shard (Interpretador)
 
-No interpretador TypeScript, um Shard é representado como um objeto com as seguintes propriedades:
+No interpretador, um Shard é representado como um objeto com as seguintes propriedades:
 
 - **name**: Um nome descritivo para o shard (ex: "skyrim-se", "skse").
 - **version**: A versão do conteúdo.
@@ -30,28 +37,5 @@ No interpretador TypeScript, um Shard é representado como um objeto com as segu
    - Todas as **Dependências** são vinculadas ao ambiente de build conforme necessário.
    - O script **postBuild** é executado dentro do sandbox.
 5. **Finalização**: O diretório resultante é movido para o caminho final do store e marcado como somente leitura.
-
-## 4. Exemplo
-
-```typescript
-import { mkShard, sources } from "kintsugi";
-
-const myMod = await mkShard({
-  name: "cool-mod",
-  version: "1.0.0",
-  src: sources.fetch_url({
-    url: "https://example.com/mod.zip",
-    sha256: "...",
-    unpack: true
-  }),
-  dependencies: [skyrim],
-  postBuild: `
-    # Limpa arquivos desnecessários
-    rm -rf tests/
-    # Move arquivos para os locais esperados
-    mv Data/* .
-  `
-});
-```
 
 Ao separar a **Source** (obtenção de arquivos) da **Build** (script postBuild), os Kintsugi Shards permanecem altamente flexíveis e reprodutíveis.
