@@ -3,3 +3,10 @@ bin/
 .gocache
 kintsugi-compiler
 kintsugi
+node_modules/
+dist/
+build/
+*.log
+.env*
+.turbo/
+*.tsbuildinfo

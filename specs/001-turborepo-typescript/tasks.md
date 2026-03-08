@@ -24,11 +24,11 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 **Purpose**: Project initialization and turborepo configuration
 
-- [ ] T001 [P] Create root `package.json` with npm workspaces configuration in repository root
-- [ ] T002 [P] Create `turbo.json` with build, test, lint, and typecheck pipeline tasks
-- [ ] T003 Update `flake.nix` to add Bun to devShell buildInputs
-- [ ] T004 [P] Create `packages/kitsugi/` directory structure (src/, tests/, types/)
-- [ ] T005 Run `bun install` to verify workspace linking works
+- [X] T001 [P] Create root `package.json` with npm workspaces configuration in repository root
+- [X] T002 [P] Create `turbo.json` with build, test, lint, and typecheck pipeline tasks
+- [X] T003 Update `flake.nix` to add Bun to devShell buildInputs
+- [X] T004 [P] Create `packages/kitsugi/` directory structure (src/, tests/, types/)
+- [X] T005 Run `bun install` to verify workspace linking works
 
 ---
 
