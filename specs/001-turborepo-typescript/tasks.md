@@ -55,15 +55,15 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 > NOTE: Write tests FIRST, ensure they FAIL before implementation
 
-- [ ] T012 [P] [US1] Add contract test for turbo.json validity in tests/contract/test_turbo_config.test.ts
-- [ ] T013 [P] [US1] Add contract test for workspace linking in tests/contract/test_workspace.test.ts
+- [X] T012 [P] [US1] Add contract test for turbo.json validity in tests/contract/test_turbo_config.test.ts
+- [X] T013 [P] [US1] Add contract test for workspace linking in tests/contract/test_workspace.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Verify turbo.json has correct $schema and pipeline definitions
-- [ ] T015 [US1] Verify package.json workspaces includes "packages/*"
-- [ ] T016 [US1] Run `turbo run build` and confirm all packages build without errors
-- [ ] T017 [US1] Run `turbo run test` and confirm all tests pass
+- [X] T014 [US1] Verify turbo.json has correct $schema and pipeline definitions
+- [X] T015 [US1] Verify package.json workspaces includes "packages/*"
+- [X] T016 [US1] Run `turbo run build` and confirm all packages build without errors
+- [X] T017 [US1] Run `turbo run test` and confirm all tests pass
 
 **Checkpoint**: Turborepo infrastructure working - can proceed to library implementation
 
@@ -75,19 +75,21 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 **Independent Test**: Package builds independently and can be imported by other packages
 
-### Tests for User Story 2
+### Tests for User Story 2 (TDD - Write First, Must FAIL)
 
 > NOTE: Write tests FIRST, ensure they FAIL before implementation
 
-- [ ] T018 [P] [US2] Add test for package.json exports in tests/contract/test_package_exports.test.ts
-- [ ] T019 [P] [US2] Add test for TypeScript declaration files in tests/contract/test_types.test.ts
+- [ ] T018 [P] [US2] Create test file `packages/kitsugi/tests/contract/test_package_exports.test.ts` that verifies package.json exports field includes "./dist/index.js"
+- [ ] T019 [P] [US2] Create test file `packages/kitsugi/tests/contract/test_types.test.ts` that verifies TypeScript declaration files (.d.ts) are generated in dist/
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Configure package.json exports field for ESM compatibility
-- [ ] T021 [US2] Add build script to generate dist/ output with .d.ts files
-- [ ] T022 [US2] Run `turbo run build --filter=kitsugi` and verify dist/ contains compiled JS and types
-- [ ] T023 [US2] Verify package can be imported via `import { ... } from 'kitsugi'`
+- [ ] T020 [US2] Run tests T018-T019 and confirm they FAIL (Red phase of TDD)
+- [ ] T021 [US2] Implement package.json exports field: add "exports" key with "./dist/index.js" entry in `packages/kitsugi/package.json`
+- [ ] T022 [US2] Configure TypeScript to generate declaration files: ensure tsconfig.json has "declaration": true and "declarationDir" set in `packages/kitsugi/tsconfig.json`
+- [ ] T023 [US2] Run `turbo run build --filter=kitsugi` and verify dist/ contains both .js and .d.ts files
+- [ ] T024 [US2] Run tests T018-T019 and confirm they PASS (Green phase of TDD)
+- [ ] T025 [US2] Verify package can be imported via `import { ... } from 'kitsugi'` in a test file
 
 **Checkpoint**: Library package structure complete - ready for DSL implementation
 
@@ -99,26 +101,50 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 **Independent Test**: Tests pass and library produces recipe output compatible with Go executor
 
-### Tests for User Story 3
+### Tests for User Story 3 (TDD - Write First, Must FAIL)
 
-> NOTE: Write tests FIRST (TDD), ensure they FAIL before implementation
+> NOTE: Write tests FIRST, ensure they FAIL before implementation
 
-- [ ] T024 [P] [US3] Add unit test for Mod entity in tests/unit/Mod.test.ts
-- [ ] T025 [P] [US3] Add unit test for ModPack entity in tests/unit/ModPack.test.ts
-- [ ] T026 [P] [US3] Add unit test for Source entity in tests/unit/Source.test.ts
-- [ ] T027 [US3] Add unit test for Recipe output format in tests/unit/Recipe.test.ts
-- [ ] T028 [US3] Add integration test for DSL builder in tests/integration/dsl_builder.test.ts
+#### Entity Tests
+
+- [ ] T026 [P] [US3] Create test file `packages/kitsugi/tests/unit/Mod.test.ts` that tests Mod entity with fields: id, name, version, source
+- [ ] T027 [P] [US3] Create test file `packages/kitsugi/tests/unit/ModPack.test.ts` that tests ModPack entity with fields: name, version, mods[]
+- [ ] T028 [P] [US3] Create test file `packages/kitsugi/tests/unit/Source.test.ts` that tests Source entity with fields: type, url, path
+
+#### Recipe Output Tests
+
+- [ ] T029 [P] [US3] Create test file `packages/kitsugi/tests/unit/Recipe.test.ts` that tests Recipe JSON output structure matches Go executor contract
+- [ ] T030 [P] [US3] Create test file `packages/kitsugi/tests/unit/Builder.test.ts` that tests Builder class DSL methods: .mod(), .modPack(), .build()
+
+#### Integration Tests
+
+- [ ] T031 [US3] Create test file `packages/kitsugi/tests/integration/dsl_builder.test.ts` that tests full DSL flow: create modpack with mods, generate recipe
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Create Mod entity in src/entities/Mod.ts
-- [ ] T030 [US3] Create ModPack entity in src/entities/ModPack.ts
-- [ ] T031 [US3] Create Source entity in src/entities/Source.ts
-- [ ] T032 [US3] Create Builder class in src/builder/Builder.ts for fluent DSL
-- [ ] T033 [US3] Create Recipe output generator in src/output/RecipeGenerator.ts
-- [ ] T034 [US3] Create main export file src/index.ts with public API
-- [ ] T035 [US3] Run tests and verify all pass (Red-Green-Refactor)
-- [ ] T036 [US3] Build package and verify recipe JSON output is generated correctly
+- [ ] T032 [US3] Run tests T026-T031 and confirm they all FAIL (Red phase of TDD)
+
+#### Entity Implementation
+
+- [ ] T033 [US3] Create Mod entity in `packages/kitsugi/src/entities/Mod.ts` with id, name, version, source fields and validation
+- [ ] T034 [US3] Create Source entity in `packages/kitsugi/src/entities/Source.ts` with type (curseforge/modrinth/direct), url, path fields
+- [ ] T035 [US3] Create ModPack entity in `packages/kitsugi/src/entities/ModPack.ts` with name, version, mods[], metadata fields
+
+#### Service/Builder Implementation
+
+- [ ] T036 [US3] Create Builder class in `packages/kitsugi/src/builder/Builder.ts` with fluent DSL methods: .mod(), .modPack(), .withMods(), .build()
+- [ ] T037 [US3] Create RecipeGenerator in `packages/kitsugi/src/output/RecipeGenerator.ts` that converts entities to JSON recipe format
+
+#### Main Export
+
+- [ ] T038 [US3] Update main export file `packages/kitsugi/src/index.ts` to export: Mod, Source, ModPack, Builder, generateRecipe
+
+#### Verify Implementation
+
+- [ ] T039 [US3] Run tests T026-T035 and confirm they PASS (Green phase of TDD)
+- [ ] T040 [US3] Run tests T030-T031 for Builder and integration, confirm PASS
+- [ ] T041 [US3] Run `turbo run build --filter=kitsugi` and verify recipe JSON output is generated correctly in dist/
+- [ ] T042 [US3] Run `turbo run test` and confirm all tests pass
 
 **Checkpoint**: Library features implemented and tested - ready for publishing
 
@@ -132,8 +158,10 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] Check docs/ for any references to TypeScript library imports
-- [ ] T038 [US4] Update any outdated import paths in documentation
+- [ ] T043 [US4] Search repository for any existing TypeScript library import paths or references
+- [ ] T044 [US4] Update documentation in docs/ that references old library location
+- [ ] T045 [US4] Update any import statements that reference old package location
+- [ ] T046 [US4] Run tests to verify all imports work correctly after migration
 
 **Checkpoint**: References updated - library ready for use
 
@@ -143,11 +171,21 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 **Purpose**: Final improvements and publication preparation
 
-- [ ] T039 [P] Run linting across all packages with `turbo run lint`
-- [ ] T040 [P] Run type checking with `turbo run typecheck`
-- [ ] T041 Create CHANGELOG.md for kitsugi package
-- [ ] T042 Add repository badges and links in package.json (repository, homepage, bugs)
-- [ ] T043 Verify npm publish will work (run `npm publish --dry-run`)
+### Tests
+
+- [ ] T047 [P] Verify all existing tests still pass after changes
+
+### Linting & Type Checking
+
+- [ ] T048 [P] Run linting across all packages with `turbo run lint`
+- [ ] T049 [P] Run type checking with `turbo run typecheck`
+
+### Documentation & Publishing
+
+- [ ] T050 Create CHANGELOG.md for kitsugi package in `packages/kitsugi/CHANGELOG.md`
+- [ ] T051 Add repository badges and links in `packages/kitsugi/package.json` (repository, homepage, bugs)
+- [ ] T052 Verify npm publish will work by running `npm publish --dry-run` in packages/kitsugi/
+- [ ] T053 Build final package and verify dist/ contains all required files (index.js, index.d.ts, package.json)
 
 ---
 
@@ -170,12 +208,14 @@ description: "Task list for Turborepo TypeScript Library Migration"
 - **US3 (P2)**: Depends on US2 (needs package structure to implement features)
 - **US4 (P3)**: Depends on US3 (needs features to update references)
 
-### Within Each User Story
+### Within Each User Story (TDD Workflow)
 
-- Tests (TDD) MUST be written and FAIL before implementation
-- Core entities before services
-- Core implementation before integration
-- Story complete before moving to next priority
+1. Write tests FIRST (T026-T031, T018-T019) - they must FAIL
+2. Implement entities/services (T033-T038) - step by step
+3. Run tests after each implementation - they should PASS
+4. Refactor if needed
+5. Verify build works
+6. Move to next story
 
 ### Parallel Opportunities
 
@@ -183,6 +223,7 @@ description: "Task list for Turborepo TypeScript Library Migration"
 - All Foundational tasks marked [P] can run in parallel
 - US1 and US2 can run in parallel (both P1)
 - Tests for each story marked [P] can run in parallel
+- Phase 7 lint and typecheck can run in parallel
 
 ---
 
@@ -229,3 +270,18 @@ With multiple developers:
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+
+---
+
+## Summary
+
+- **Total Tasks**: 53
+- **Completed**: 17 (Phase 1-3)
+- **Remaining**: 36
+  - Phase 4 (US2): 8 tasks (2 tests + 5 implementation + 1 verify)
+  - Phase 5 (US3): 17 tasks (6 tests + 10 implementation + 1 verify)
+  - Phase 6 (US4): 4 tasks
+  - Phase 7: 7 tasks
+- **Parallel Opportunities**: 15 tasks marked [P]
+- **Test Tasks**: 8 (T018-T019, T026-T031)
+- **Implementation Tasks**: 28
