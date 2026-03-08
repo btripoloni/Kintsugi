@@ -4,7 +4,7 @@ O interpretador é responsável por executar as expressões TypeScript e gerar r
 
 ## 1. Visão Geral
 
-O interpretador usa Deno como runtime e a biblioteca TypeScript está disponível como um pacote JSR: `jsr:@btripoloni/kintsugi`.
+O interpretador usa bun como runtime e a biblioteca TypeScript está disponível como um pacote JSR: `jsr:@btripoloni/kintsugi`.
 
 A biblioteca é importada automaticamente quando você cria um novo modlist com `kintsugi init`.
 

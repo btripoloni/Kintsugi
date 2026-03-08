@@ -28,7 +28,7 @@ No interpretador, um Shard é representado como um objeto com as seguintes propr
 
 ## 3. O Ciclo de Vida: De Receita ao Store
 
-1. **Interpretação**: O interpretador Deno executa a expressão e calcula o hash do Shard com base em seus inputs (nome, versão, src, scripts, dependências).
+1. **Interpretação**: O interpretador bun executa a expressão e calcula o hash do Shard com base em seus inputs (nome, versão, src, scripts, dependências).
 2. **Geração de Receita**: Para cada Shard único, uma receita `.json` é salva em `~/.kintsugi/recipes/`.
 3. **Checagem de Cache**: O compilador verifica se `/store/[hash]-[nome]-[versão]` já existe.
 4. **Realização**:
