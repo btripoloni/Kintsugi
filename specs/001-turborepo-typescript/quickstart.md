@@ -155,3 +155,50 @@ bun x tsc --version
 # Run typecheck explicitly
 turbo run typecheck --filter=@kintsugi/library
 ```
+
+## Source Handlers
+
+The library provides four source handlers as defined in `docs/sources/`:
+
+### JSON Source
+
+```typescript
+import { json } from 'kitsugi';
+
+const config = json({
+  path: 'config',
+  content: { version: '1.0.0' }
+});
+```
+
+### Local Source
+
+```typescript
+import { local } from 'kitsugi';
+
+const files = local({
+  path: 'mods/my-mod'
+});
+```
+
+### URL Source
+
+```typescript
+import { url } from 'kitsugi';
+
+const download = url({
+  url: 'https://example.com/mod.zip',
+  sha256: 'abc123...',
+  unpack: true
+});
+```
+
+### Vase Source
+
+```typescript
+import { vase } from 'kitsugi';
+
+const assets = vase({
+  vase: 'skyrim-assets'
+});
+```

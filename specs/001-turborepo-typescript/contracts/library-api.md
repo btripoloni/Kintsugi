@@ -18,23 +18,67 @@ This document defines the public API contract for the TypeScript library package
 ### Core Functions
 
 ```typescript
-// Example - actual API will be defined during implementation
-export function createLibrary(): Library;
-export function initialize(config: Config): Promise<void>;
+// Source handler functions from docs/sources/
+
+// JSON Source - Serializes object to .json file
+export interface JsonSourceOptions {
+  path: string;
+  content: any;
+}
+export function json(options: JsonSourceOptions): JsonSourceResult;
+
+// Local Source - Imports from local filesystem
+export interface LocalSourceOptions {
+  path: string;
+}
+export function local(options: LocalSourceOptions): LocalSourceResult;
+
+// URL Source - Downloads from remote URL
+export interface UrlSourceOptions {
+  url: string;
+  sha256: string;
+  unpack?: boolean;
+  method?: "GET" | "POST";
+  headers?: Record<string, string>;
+  cookies?: Record<string, string>;
+  body?: string;
+}
+export function url(options: UrlSourceOptions): UrlSourceResult;
+
+// Vase Source - Imports from Vase collection
+export interface VaseSourceOptions {
+  vase: string;
+}
+export function vase(options: VaseSourceOptions): VaseSourceResult;
 ```
 
 ### Types
 
 ```typescript
-// Example - actual types will be defined during implementation
-export interface Library {
-  name: string;
-  version: string;
-  init(): Promise<void>;
+// Source result types
+export interface JsonSourceResult {
+  type: "json";
+  path: string;
+  content: any;
 }
 
-export interface Config {
-  // Configuration options
+export interface LocalSourceResult {
+  type: "local";
+  path: string;
+  files: string[];
+}
+
+export interface UrlSourceResult {
+  type: "url";
+  url: string;
+  sha256: string;
+  unpack?: boolean;
+}
+
+export interface VaseResult {
+  type: "vase";
+  vase: string;
+  items: string[];
 }
 ```
 

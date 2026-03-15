@@ -3,6 +3,8 @@
 Auto-generated from all feature plans. Last updated: 2026-03-08
 
 ## Active Technologies
+- TypeScript 5.x (via Bun) + Bun, Turborepo, TypeScript 5.x (001-turborepo-typescript)
+- N/A (library outputs JSON recipe definitions) (001-turborepo-typescript)
 
 - TypeScript 5.x (via Bun) + Bun, Turborepo, TypeScript (001-turborepo-typescript)
 
@@ -22,6 +24,7 @@ npm test && npm run lint
 TypeScript 5.x (via Bun): Follow standard conventions
 
 ## Recent Changes
+- 001-turborepo-typescript: Added TypeScript 5.x (via Bun) + Bun, Turborepo, TypeScript 5.x
 
 - 001-turborepo-typescript: Added TypeScript 5.x (via Bun) + Bun, Turborepo, TypeScript
 

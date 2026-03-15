@@ -79,17 +79,17 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 > NOTE: Write tests FIRST, ensure they FAIL before implementation
 
-- [ ] T018 [P] [US2] Create test file `packages/kitsugi/tests/contract/test_package_exports.test.ts` that verifies package.json exports field includes "./dist/index.js"
-- [ ] T019 [P] [US2] Create test file `packages/kitsugi/tests/contract/test_types.test.ts` that verifies TypeScript declaration files (.d.ts) are generated in dist/
+- [X] T018 [P] [US2] Create test file `packages/kitsugi/tests/contract/test_package_exports.test.ts` that verifies package.json exports field includes "./dist/index.js"
+- [X] T019 [P] [US2] Create test file `packages/kitsugi/tests/contract/test_types.test.ts` that verifies TypeScript declaration files (.d.ts) are generated in dist/
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Run tests T018-T019 and confirm they FAIL (Red phase of TDD)
-- [ ] T021 [US2] Implement package.json exports field: add "exports" key with "./dist/index.js" entry in `packages/kitsugi/package.json`
-- [ ] T022 [US2] Configure TypeScript to generate declaration files: ensure tsconfig.json has "declaration": true and "declarationDir" set in `packages/kitsugi/tsconfig.json`
-- [ ] T023 [US2] Run `turbo run build --filter=kitsugi` and verify dist/ contains both .js and .d.ts files
-- [ ] T024 [US2] Run tests T018-T019 and confirm they PASS (Green phase of TDD)
-- [ ] T025 [US2] Verify package can be imported via `import { ... } from 'kitsugi'` in a test file
+- [X] T020 [US2] Run tests T018-T019 and confirm they FAIL (Red phase of TDD)
+- [X] T021 [US2] Implement package.json exports field: add "exports" key with "./dist/index.js" entry in `packages/kitsugi/package.json`
+- [X] T022 [US2] Configure TypeScript to generate declaration files: ensure tsconfig.json has "declaration": true and "declarationDir" set in `packages/kitsugi/tsconfig.json`
+- [X] T023 [US2] Run `turbo run build --filter=kitsugi` and verify dist/ contains both .js and .d.ts files
+- [X] T024 [US2] Run tests T018-T019 and confirm they PASS (Green phase of TDD)
+- [X] T025 [US2] Verify package can be imported via `import { ... } from 'kitsugi'` in a test file
 
 **Checkpoint**: Library package structure complete - ready for DSL implementation
 
@@ -107,28 +107,42 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 #### Entity Tests
 
-- [ ] T026 [P] [US3] Create test file `packages/kitsugi/tests/unit/Mod.test.ts` that tests Mod entity with fields: id, name, version, source
-- [ ] T027 [P] [US3] Create test file `packages/kitsugi/tests/unit/ModPack.test.ts` that tests ModPack entity with fields: name, version, mods[]
-- [ ] T028 [P] [US3] Create test file `packages/kitsugi/tests/unit/Source.test.ts` that tests Source entity with fields: type, url, path
+- [X] T026 [P] [US3] Create test file `packages/kitsugi/tests/unit/Mod.test.ts` that tests Mod entity with fields: id, name, version, source
+- [X] T027 [P] [US3] Create test file `packages/kitsugi/tests/unit/ModPack.test.ts` that tests ModPack entity with fields: name, version, mods[]
+- [X] T028 [P] [US3] Create test file `packages/kitsugi/tests/unit/Source.test.ts` that tests Source entity with types: json, local, url, vase
+
+#### Source Handler Tests
+
+- [ ] T028a [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/JsonSource.test.ts` that tests JsonSource handler with path and content fields
+- [ ] T028b [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/LocalSource.test.ts` that tests LocalSource handler with path field
+- [ ] T028c [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/UrlSource.test.ts` that tests UrlSource handler with url, sha256, unpack, method, headers, cookies, body fields
+- [ ] T028d [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/VaseSource.test.ts` that tests VaseSource handler with vase field
 
 #### Recipe Output Tests
 
-- [ ] T029 [P] [US3] Create test file `packages/kitsugi/tests/unit/Recipe.test.ts` that tests Recipe JSON output structure matches Go executor contract
-- [ ] T030 [P] [US3] Create test file `packages/kitsugi/tests/unit/Builder.test.ts` that tests Builder class DSL methods: .mod(), .modPack(), .build()
+- [X] T029 [P] [US3] Create test file `packages/kitsugi/tests/unit/Recipe.test.ts` that tests Recipe JSON output structure matches Go executor contract
+- [X] T030 [P] [US3] Create test file `packages/kitsugi/tests/unit/Builder.test.ts` that tests Builder class DSL methods: .mod(), .modPack(), .build()
 
 #### Integration Tests
 
-- [ ] T031 [US3] Create test file `packages/kitsugi/tests/integration/dsl_builder.test.ts` that tests full DSL flow: create modpack with mods, generate recipe
+- [X] T031 [US3] Create test file `packages/kitsugi/tests/integration/dsl_builder.test.ts` that tests full DSL flow: create modpack with mods, generate recipe
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Run tests T026-T031 and confirm they all FAIL (Red phase of TDD)
+- [ ] T032 [US3] Run tests T026-T028d, T029-T031 and confirm they all FAIL (Red phase of TDD)
 
 #### Entity Implementation
 
 - [ ] T033 [US3] Create Mod entity in `packages/kitsugi/src/entities/Mod.ts` with id, name, version, source fields and validation
-- [ ] T034 [US3] Create Source entity in `packages/kitsugi/src/entities/Source.ts` with type (curseforge/modrinth/direct), url, path fields
+- [ ] T034 [US3] Create Source entity in `packages/kitsugi/src/entities/Source.ts` with source types: json, local, url, vase (per docs/sources/)
 - [ ] T035 [US3] Create ModPack entity in `packages/kitsugi/src/entities/ModPack.ts` with name, version, mods[], metadata fields
+
+#### Source Handler Implementation
+
+- [ ] T035a [US3] Create JsonSource handler in `packages/kitsugi/src/sources/JsonSource.ts` with path and content fields
+- [ ] T035b [US3] Create LocalSource handler in `packages/kitsugi/src/sources/LocalSource.ts` with path field (relative to modlist root)
+- [ ] T035c [US3] Create UrlSource handler in `packages/kitsugi/src/sources/UrlSource.ts` with url, sha256, unpack, method, headers, cookies, body fields
+- [ ] T035d [US3] Create VaseSource handler in `packages/kitsugi/src/sources/VaseSource.ts` with vase field (registered Vase name)
 
 #### Service/Builder Implementation
 
@@ -137,11 +151,11 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 #### Main Export
 
-- [ ] T038 [US3] Update main export file `packages/kitsugi/src/index.ts` to export: Mod, Source, ModPack, Builder, generateRecipe
+- [ ] T038 [US3] Update main export file `packages/kitsugi/src/index.ts` to export: Mod, Source, ModPack, Builder, generateRecipe, JsonSource, LocalSource, UrlSource, VaseSource
 
 #### Verify Implementation
 
-- [ ] T039 [US3] Run tests T026-T035 and confirm they PASS (Green phase of TDD)
+- [ ] T039 [US3] Run tests T026-T028d and confirm they PASS (Green phase of TDD)
 - [ ] T040 [US3] Run tests T030-T031 for Builder and integration, confirm PASS
 - [ ] T041 [US3] Run `turbo run build --filter=kitsugi` and verify recipe JSON output is generated correctly in dist/
 - [ ] T042 [US3] Run `turbo run test` and confirm all tests pass
@@ -210,7 +224,7 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 ### Within Each User Story (TDD Workflow)
 
-1. Write tests FIRST (T026-T031, T018-T019) - they must FAIL
+1. Write tests FIRST (T026-T028d, T029-T031, T018-T019) - they must FAIL
 2. Implement entities/services (T033-T038) - step by step
 3. Run tests after each implementation - they should PASS
 4. Refactor if needed
@@ -275,13 +289,13 @@ With multiple developers:
 
 ## Summary
 
-- **Total Tasks**: 53
+- **Total Tasks**: 57
 - **Completed**: 17 (Phase 1-3)
-- **Remaining**: 36
+- **Remaining**: 40
   - Phase 4 (US2): 8 tasks (2 tests + 5 implementation + 1 verify)
-  - Phase 5 (US3): 17 tasks (6 tests + 10 implementation + 1 verify)
+  - Phase 5 (US3): 21 tasks (10 tests + 10 implementation + 1 verify)
   - Phase 6 (US4): 4 tasks
   - Phase 7: 7 tasks
-- **Parallel Opportunities**: 15 tasks marked [P]
-- **Test Tasks**: 8 (T018-T019, T026-T031)
-- **Implementation Tasks**: 28
+- **Parallel Opportunities**: 19 tasks marked [P]
+- **Test Tasks**: 12 (T018-T019, T026-T028d, T029-T031)
+- **Implementation Tasks**: 32

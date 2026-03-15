@@ -102,3 +102,72 @@ Draft → Ready → Building → Tested → Published
 3. **Types**: TypeScript MUST compile without errors
 4. **Tests**: All tests MUST pass before publishing
 5. **Dependencies**: Circular dependencies between packages are NOT allowed
+
+---
+
+## Source Handlers
+
+The library supports four source types as defined in `docs/sources/`:
+
+### JSON Source
+
+**Description**: Serializes an object to a `.json` file
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | "json" | Source type identifier |
+| path | string | File name (e.g., "config") |
+| content | any | Serializable object |
+
+**Validation**:
+- `path` MUST be a valid file name
+- `content` MUST be JSON-serializable
+
+---
+
+### Local Source
+
+**Description**: Imports files or directories from the local filesystem
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | "local" | Source type identifier |
+| path | string | Path relative to modlist root |
+
+**Validation**:
+- `path` MUST resolve to an existing file or directory
+
+---
+
+### URL Source
+
+**Description**: Downloads a file or package from a remote URL
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | "url" | Source type identifier |
+| url | string | The download URL |
+| sha256 | string | Expected SHA256 hash for integrity |
+| unpack? | boolean | Auto-extract if .zip, .tar, etc. |
+| method? | "GET" \| "POST" | HTTP method |
+| headers? | Record<string, string> | HTTP headers |
+| cookies? | Record<string, string> | HTTP cookies |
+| body? | string | Request body |
+
+**Validation**:
+- `url` MUST be a valid URL
+- `sha256` MUST be a 64-character hex string
+
+---
+
+### Vase Source
+
+**Description**: Imports content from a global Vase collection
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | "vase" | Source type identifier |
+| vase | string | Registered Vase name (e.g., "skyrim-assets") |
+
+**Validation**:
+- `vase` MUST match a registered Vase collection name
