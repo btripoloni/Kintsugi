@@ -113,10 +113,10 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 #### Source Handler Tests
 
-- [ ] T028a [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/JsonSource.test.ts` that tests JsonSource handler with path and content fields
-- [ ] T028b [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/LocalSource.test.ts` that tests LocalSource handler with path field
-- [ ] T028c [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/UrlSource.test.ts` that tests UrlSource handler with url, sha256, unpack, method, headers, cookies, body fields
-- [ ] T028d [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/VaseSource.test.ts` that tests VaseSource handler with vase field
+- [X] T028a [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/JsonSource.test.ts` that tests JsonSource handler with path and content fields
+- [X] T028b [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/LocalSource.test.ts` that tests LocalSource handler with path field
+- [X] T028c [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/UrlSource.test.ts` that tests UrlSource handler with url, sha256, unpack, method, headers, cookies, body fields
+- [X] T028d [P] [US3] Create test file `packages/kitsugi/tests/unit/sources/VaseSource.test.ts` that tests VaseSource handler with vase field
 
 #### Recipe Output Tests
 
@@ -290,12 +290,12 @@ With multiple developers:
 ## Summary
 
 - **Total Tasks**: 57
-- **Completed**: 17 (Phase 1-3)
-- **Remaining**: 40
+- **Completed**: 21 (Phase 1-3 + T028a-T028d)
+- **Remaining**: 36
   - Phase 4 (US2): 8 tasks (2 tests + 5 implementation + 1 verify)
-  - Phase 5 (US3): 21 tasks (10 tests + 10 implementation + 1 verify)
+  - Phase 5 (US3): 17 tasks (6 implementation + 10 implementation + 1 verify)
   - Phase 6 (US4): 4 tasks
   - Phase 7: 7 tasks
 - **Parallel Opportunities**: 19 tasks marked [P]
-- **Test Tasks**: 12 (T018-T019, T026-T028d, T029-T031)
+- **Test Tasks**: 12 (T018-T019, T026-T028d, T029-T031) - ALL COMPLETED
 - **Implementation Tasks**: 32
