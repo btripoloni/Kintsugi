@@ -129,13 +129,13 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Run tests T026-T028d, T029-T031 and confirm they all FAIL (Red phase of TDD)
+- [X] T032 [US3] Run tests T026-T028d, T029-T031 and confirm they all FAIL (Red phase of TDD)
 
 #### Entity Implementation
 
-- [ ] T033 [US3] Create Mod entity in `packages/kitsugi/src/entities/Mod.ts` with id, name, version, source fields and validation
-- [ ] T034 [US3] Create Source entity in `packages/kitsugi/src/entities/Source.ts` with source types: json, local, url, vase (per docs/sources/)
-- [ ] T035 [US3] Create ModPack entity in `packages/kitsugi/src/entities/ModPack.ts` with name, version, mods[], metadata fields
+- [X] T033 [US3] Create Mod entity in `packages/kitsugi/src/entities/Mod.ts` with id, name, version, source fields and validation
+- [X] T034 [US3] Create Source entity in `packages/kitsugi/src/entities/Source.ts` with source types: json, local, url, vase (per docs/sources/)
+- [X] T035 [US3] Create ModPack entity in `packages/kitsugi/src/entities/ModPack.ts` with name, version, mods[], metadata fields
 
 #### Source Handler Implementation
 
