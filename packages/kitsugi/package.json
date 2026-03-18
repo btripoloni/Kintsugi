@@ -14,6 +14,15 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/btripoloni/mod-manager.git",
+    "directory": "packages/kitsugi"
+  },
+  "homepage": "https://github.com/btripoloni/mod-manager/tree/main/packages/kitsugi",
+  "bugs": {
+    "url": "https://github.com/btripoloni/mod-manager/issues"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test",

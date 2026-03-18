@@ -187,19 +187,19 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 ### Tests
 
-- [ ] T047 [P] Verify all existing tests still pass after changes
+- [X] T047 [P] Verify all existing tests still pass after changes
 
 ### Linting & Type Checking
 
-- [ ] T048 [P] Run linting across all packages with `turbo run lint`
-- [ ] T049 [P] Run type checking with `turbo run typecheck`
+- [X] T048 [P] Run linting across all packages with `turbo run lint`
+- [X] T049 [P] Run type checking with `turbo run typecheck`
 
 ### Documentation & Publishing
 
-- [ ] T050 Create CHANGELOG.md for kitsugi package in `packages/kitsugi/CHANGELOG.md`
-- [ ] T051 Add repository badges and links in `packages/kitsugi/package.json` (repository, homepage, bugs)
-- [ ] T052 Verify npm publish will work by running `npm publish --dry-run` in packages/kitsugi/
-- [ ] T053 Build final package and verify dist/ contains all required files (index.js, index.d.ts, package.json)
+- [X] T050 Create CHANGELOG.md for kitsugi package in `packages/kitsugi/CHANGELOG.md`
+- [X] T051 Add repository badges and links in `packages/kitsugi/package.json` (repository, homepage, bugs)
+- [X] T052 Verify npm publish will work by running `npm publish --dry-run` in packages/kitsugi/
+- [X] T053 Build final package and verify dist/ contains all required files (index.js, index.d.ts, package.json)
 
 ---
 
