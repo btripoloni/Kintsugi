@@ -39,7 +39,7 @@ This will:
 turbo run build
 
 # Build specific package
-turbo run build --filter=@kintsugi/library
+turbo run build --filter=kitsugi
 ```
 
 ### 4. Run Tests
@@ -49,10 +49,10 @@ turbo run build --filter=@kintsugi/library
 turbo run test
 
 # Run tests for specific package
-turbo run test --filter=@kintsugi/library
+turbo run test --filter=kitsugi
 
 # Watch mode
-turbo run test --filter=@kintsugi/library -- --watch
+turbo run test --filter=kitsugi -- --watch
 ```
 
 ### 5. Type Checking
@@ -62,7 +62,7 @@ turbo run test --filter=@kintsugi/library -- --watch
 turbo run typecheck
 
 # Type-check specific package
-turbo run typecheck --filter=@kintsugi/library
+turbo run typecheck --filter=kitsugi
 ```
 
 ### 6. Linting
@@ -86,14 +86,14 @@ Follow the Red-Green-Refactor cycle:
    ```bash
    # Implement in src/
    # Run test to verify
-   turbo run test --filter=@kintsugi/library
+   turbo run test --filter=kitsugi
    ```
 
 3. **Refactor**: Improve code while keeping tests passing
    ```bash
    # Edit code
    # Re-run tests
-   turbo run test --filter=@kintsugi/library
+   turbo run test --filter=kitsugi
    ```
 
 ## Common Tasks
@@ -153,7 +153,7 @@ rm -rf .turbo
 bun x tsc --version
 
 # Run typecheck explicitly
-turbo run typecheck --filter=@kintsugi/library
+turbo run typecheck --filter=kitsugi
 ```
 
 ## Source Handlers

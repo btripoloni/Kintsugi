@@ -44,7 +44,7 @@
 
 | Field | Type | Description |
 |-------|------|-------------|
-| name | string | Package name (e.g., "@kintsugi/library") |
+| name | string | Package name (e.g., "kitsugi") |
 | version | string | Semantic version (e.g., "0.1.0") |
 | main | string | Entry point (e.g., "dist/index.js") |
 | types | string | Type definitions (e.g., "dist/index.d.ts") |

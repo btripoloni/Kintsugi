@@ -1,6 +1,6 @@
 # Library Public API Contract
 
-**Package**: `@kintsugi/library`
+**Package**: `kitsugi`
 **Version**: 0.1.0
 
 ## Overview
