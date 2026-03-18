@@ -21,6 +21,7 @@ export interface Source {
 
 const VALID_TYPES: SourceType[] = ["json", "local", "url", "vase"];
 
+// TODO:split in diferent clases.
 export function createSource(options: SourceOptions): Source {
   if (!VALID_TYPES.includes(options.type)) {
     throw new Error(`Source: type must be one of ${VALID_TYPES.join(", ")}`);
