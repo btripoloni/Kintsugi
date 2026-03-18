@@ -5,7 +5,7 @@ export interface LocalSourceOptions {
 export interface LocalSourceResult {
   type: "local";
   path: string;
-  toJSON(): LocalSourceResult;
+  toJSON(): { type: "local"; path: string };
 }
 
 export function LocalSource(options: LocalSourceOptions): LocalSourceResult {
@@ -17,16 +17,16 @@ export function LocalSource(options: LocalSourceOptions): LocalSourceResult {
     throw new Error("LocalSource: path must be relative to modlist root");
   }
 
-  const result: LocalSourceResult = {
+  const jsonOutput = {
+    type: "local" as const,
+    path: options.path,
+  };
+
+  return {
     type: "local",
     path: options.path,
     toJSON() {
-      return {
-        type: this.type,
-        path: this.path,
-      };
+      return jsonOutput;
     },
   };
-
-  return result;
 }

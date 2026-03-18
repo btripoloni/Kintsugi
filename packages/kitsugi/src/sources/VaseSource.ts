@@ -5,7 +5,7 @@ export interface VaseSourceOptions {
 export interface VaseSourceResult {
   type: "vase";
   vase: string;
-  toJSON(): VaseSourceResult;
+  toJSON(): { type: "vase"; vase: string };
 }
 
 function isValidVaseName(name: string): boolean {
@@ -21,16 +21,16 @@ export function VaseSource(options: VaseSourceOptions): VaseSourceResult {
     throw new Error("VaseSource: vase must contain only lowercase letters, numbers, hyphens, and underscores");
   }
 
-  const result: VaseSourceResult = {
+  const jsonOutput = {
+    type: "vase" as const,
+    vase: options.vase,
+  };
+
+  return {
     type: "vase",
     vase: options.vase,
     toJSON() {
-      return {
-        type: this.type,
-        vase: this.vase,
-      };
+      return jsonOutput;
     },
   };
-
-  return result;
 }

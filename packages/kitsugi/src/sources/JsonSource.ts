@@ -7,7 +7,7 @@ export interface JsonSourceResult {
   type: "json";
   path: string;
   content: any;
-  toJSON(): JsonSourceResult;
+  toJSON(): { type: "json"; path: string; content: any };
 }
 
 export function JsonSource(options: JsonSourceOptions): JsonSourceResult {
@@ -19,18 +19,18 @@ export function JsonSource(options: JsonSourceOptions): JsonSourceResult {
     throw new Error("JsonSource: content is required");
   }
 
-  const result: JsonSourceResult = {
+  const jsonOutput = {
+    type: "json" as const,
+    path: options.path,
+    content: options.content,
+  };
+
+  return {
     type: "json",
     path: options.path,
     content: options.content,
     toJSON() {
-      return {
-        type: this.type,
-        path: this.path,
-        content: this.content,
-      };
+      return jsonOutput;
     },
   };
-
-  return result;
 }

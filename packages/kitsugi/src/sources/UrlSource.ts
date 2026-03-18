@@ -17,7 +17,16 @@ export interface UrlSourceResult {
   headers?: Record<string, string>;
   cookies?: Record<string, string>;
   body?: string;
-  toJSON(): UrlSourceResult;
+  toJSON(): {
+    type: "url";
+    url: string;
+    sha256: string;
+    unpack?: boolean;
+    method: "GET" | "POST";
+    headers?: Record<string, string>;
+    cookies?: Record<string, string>;
+    body?: string;
+  };
 }
 
 function isValidHex(str: string): boolean {
@@ -37,7 +46,18 @@ export function UrlSource(options: UrlSourceOptions): UrlSourceResult {
     throw new Error("UrlSource: sha256 must be valid hex");
   }
 
-  const result: UrlSourceResult = {
+  const jsonOutput = {
+    type: "url" as const,
+    url: options.url,
+    sha256: options.sha256,
+    unpack: options.unpack,
+    method: options.method || "GET",
+    headers: options.headers,
+    cookies: options.cookies,
+    body: options.body,
+  };
+
+  return {
     type: "url",
     url: options.url,
     sha256: options.sha256,
@@ -47,18 +67,7 @@ export function UrlSource(options: UrlSourceOptions): UrlSourceResult {
     cookies: options.cookies,
     body: options.body,
     toJSON() {
-      return {
-        type: this.type,
-        url: this.url,
-        sha256: this.sha256,
-        unpack: this.unpack,
-        method: this.method,
-        headers: this.headers,
-        cookies: this.cookies,
-        body: this.body,
-      };
+      return jsonOutput;
     },
   };
-
-  return result;
 }

@@ -139,26 +139,26 @@ description: "Task list for Turborepo TypeScript Library Migration"
 
 #### Source Handler Implementation
 
-- [ ] T035a [US3] Create JsonSource handler in `packages/kitsugi/src/sources/JsonSource.ts` with path and content fields
-- [ ] T035b [US3] Create LocalSource handler in `packages/kitsugi/src/sources/LocalSource.ts` with path field (relative to modlist root)
-- [ ] T035c [US3] Create UrlSource handler in `packages/kitsugi/src/sources/UrlSource.ts` with url, sha256, unpack, method, headers, cookies, body fields
-- [ ] T035d [US3] Create VaseSource handler in `packages/kitsugi/src/sources/VaseSource.ts` with vase field (registered Vase name)
+- [X] T035a [US3] Create JsonSource handler in `packages/kitsugi/src/sources/JsonSource.ts` with path and content fields
+- [X] T035b [US3] Create LocalSource handler in `packages/kitsugi/src/sources/LocalSource.ts` with path field (relative to modlist root)
+- [X] T035c [US3] Create UrlSource handler in `packages/kitsugi/src/sources/UrlSource.ts` with url, sha256, unpack, method, headers, cookies, body fields
+- [X] T035d [US3] Create VaseSource handler in `packages/kitsugi/src/sources/VaseSource.ts` with vase field (registered Vase name)
 
 #### Service/Builder Implementation
 
-- [ ] T036 [US3] Create Builder class in `packages/kitsugi/src/builder/Builder.ts` with fluent DSL methods: .mod(), .modPack(), .withMods(), .build()
-- [ ] T037 [US3] Create RecipeGenerator in `packages/kitsugi/src/output/RecipeGenerator.ts` that converts entities to JSON recipe format
+- [X] T036 [US3] Create Builder class in `packages/kitsugi/src/builder/Builder.ts` with fluent DSL methods: .mod(), .modPack(), .withMods(), .build()
+- [X] T037 [US3] Create RecipeGenerator in `packages/kitsugi/src/output/RecipeGenerator.ts` that converts entities to JSON recipe format
 
 #### Main Export
 
-- [ ] T038 [US3] Update main export file `packages/kitsugi/src/index.ts` to export: Mod, Source, ModPack, Builder, generateRecipe, JsonSource, LocalSource, UrlSource, VaseSource
+- [X] T038 [US3] Update main export file `packages/kitsugi/src/index.ts` to export: Mod, Source, ModPack, Builder, generateRecipe, JsonSource, LocalSource, UrlSource, VaseSource
 
 #### Verify Implementation
 
-- [ ] T039 [US3] Run tests T026-T028d and confirm they PASS (Green phase of TDD)
-- [ ] T040 [US3] Run tests T030-T031 for Builder and integration, confirm PASS
-- [ ] T041 [US3] Run `turbo run build --filter=kitsugi` and verify recipe JSON output is generated correctly in dist/
-- [ ] T042 [US3] Run `turbo run test` and confirm all tests pass
+- [X] T039 [US3] Run tests T026-T028d and confirm they PASS (Green phase of TDD)
+- [X] T040 [US3] Run tests T030-T031 for Builder and integration, confirm PASS
+- [X] T041 [US3] Run `turbo run build --filter=kitsugi` and verify recipe JSON output is generated correctly in dist/
+- [X] T042 [US3] Run `turbo run test` and confirm all tests pass
 
 **Checkpoint**: Library features implemented and tested - ready for publishing
 
