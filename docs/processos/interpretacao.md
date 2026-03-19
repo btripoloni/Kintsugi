@@ -14,7 +14,7 @@ A biblioteca é importada automaticamente quando você cria um novo modlist com 
 - Caminho para pasta do modlist (contendo `modlist.json` e `main.ts`)
 
 **Saída:**
-- Arquivos JSON em `/recipes/[hash]-[nome da receita]-[versão].json`
+- Arquivos JSON em `~/.kintsugi/recipes/[hash]-[nome da receita]-[versão].json`
 - Retorna hash da receita raiz para stdout
 
 ## 2.1 Workflow do Usuário
@@ -29,7 +29,7 @@ A biblioteca é importada automaticamente quando você cria um novo modlist com 
 
 As expressões usam funções fornecidas pela biblioteca padrão do Kintsugi, disponível no pacote JSR `jsr:@btripoloni/kintsugi`.
 
-Para a lista de fontes disponíveis, veja a [Biblioteca `sources`](./sources.md).
+Para a lista de fontes disponíveis, veja [Biblioteca `sources`](../conceitos/sources.md).
 
 ### 3.2 `Composition`
 

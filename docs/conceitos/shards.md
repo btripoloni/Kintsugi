@@ -8,12 +8,12 @@ Um Shard é uma receita que, quando "realizada" pelo compilador, produz um diret
 
 Como os Shards são determinísticos, se a receita permanecer a mesma, o caminho e o conteúdo da saída também permanecerão os mesmos.
 
-### Shard Characteristics
+### Características dos Shards
 
-- **Deterministic**: The same Shard always produces the same result
-- **Hash-Identified**: Each Shard has a unique hash based on its inputs (name, version, source, dependencies, etc.)
-- **Stored in Store**: Once built, a Shard resides in `~/.kintsugi/store/[hash]-[name]-[version]`
-- **Immutable**: Once in the Store, a Shard cannot be modified
+- **Determinístico**: O mesmo Shard sempre produz o mesmo resultado
+- **Identificado por Hash**: Cada Shard tem um hash único baseado em seus inputs (nome, versão, source, dependências, etc.)
+- **Armazenado no Store**: Uma vez construído, um Shard reside em `~/.kintsugi/store/[hash]-[nome]-[versão]`
+- **Imutável**: Uma vez no Store, um Shard não pode ser modificado
 
 ## 2. Estrutura de um Shard (Interpretador)
 
@@ -21,7 +21,7 @@ No interpretador, um Shard é representado como um objeto com as seguintes propr
 
 - **name**: Um nome descritivo para o shard (ex: "skyrim-se", "skse").
 - **version**: A versão do conteúdo.
-- **src (Source)**: Um descritor explicando como obter o conteúdo inicial. Veja [Biblioteca `sources`](./sources-library.md).
+- **src (Source)**: Um descritor explicando como obter o conteúdo inicial. Veja [Biblioteca `sources`](./sources.md).
 - **dependencies**: Um array de outros objetos Shard ou hashes. Estes são resolvidos pelo gerenciador de dependências.
 - **postBuild**: Um script shell opcional que roda após a Source ser realizada, mas antes do Shard ser finalizado no store.
 - **permissions**: Lista opcional de permissões necessárias durante a build (ex: `["network"]`).
@@ -38,4 +38,4 @@ No interpretador, um Shard é representado como um objeto com as seguintes propr
    - O script **postBuild** é executado dentro do sandbox.
 5. **Finalização**: O diretório resultante é movido para o caminho final do store e marcado como somente leitura.
 
-Ao separar a **Source** (obtenção de arquivos) da **Build** (script postBuild), os Kintsugi Shards permanecem altamente flexíveis e reprodutíveis.
+Ao separar a **Source** (obtenção de arquivos) da **Build** (script postBuild), os Shards do Kintsugi permanecem altamente flexíveis e reprodutíveis.
