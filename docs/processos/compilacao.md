@@ -16,24 +16,24 @@ Isso desacopla a *definição do que construir* da *definição de como executar
 
 ### A Source `write_run_spec`
 
-Para gerar estes manifestos, utilizamos uma `Shard` com `source` json com o conteudo:
+Para gerar estes manifestos, utilizamos um `Shard` com `source` json com o conteúdo:
 
 Cria um manifesto de execução (`.run.json`) como um Shard. Este manifesto define como executar a composição, permitindo múltiplos perfis (ex: `default`, `editor`). O arquivo será sempre criado em `kintsugi/exec/[name].run.json`.
 
 **Parâmetros:**
 | Nome | Tipo | Observação |
 | ---  | --- | --- |
-| name | string | Nome do perfil de execução (ex: `"default"`, `"editor"`). O arquivo será criado em `kintsugi/exec/ |
+| name | string | Nome do perfil de execução (ex: `"default"`, `"editor"`). O arquivo será criado em `kintsugi/exec/` |
 | entrypoint | string | O executável a ser iniciado. |
 | umu? | umu | Configuração para execução via UMU (Proton/Wine), opcional, nem todos os jogos precisam do umu |
-| args? | string[] | Argumentos de linha de comando para o executável | 
+| args? | string[] | Argumentos de linha de comando para o executável |
 | env? | string, string | Variáveis de ambiente adicionais. |
 
-**umu** 
+**umu**
 | Nome | Tipo | Observação |
 | ---  | --- | --- |
-| id | string | (opcional)O AppID do Steam. |
-| version | string | (opcional)A versão do UMU a ser usada. |
+| id | string | (opcional) O AppID do Steam. |
+| version | string | (opcional) A versão do UMU a ser usada. |
 
 **Exemplo de uso:**
 
@@ -68,7 +68,7 @@ Essa abordagem garante que toda composição seja autossuficiente e possa ser ex
 ## 2. Preparação do Ambiente (OverlayFS)
 
 Para permitir que um jogo escreva arquivos sem alterar a composição original, o Executor utiliza o **OverlayFS** do Linux.
-**fuse-overlayfs** para fazer uma execussão non-root
+**fuse-overlayfs** para fazer uma execução non-root
 
 ### Camadas do Overlay:
 
@@ -92,16 +92,16 @@ Para permitir que um jogo escreva arquivos sem alterar a composição original, 
 
 Para garantir que o ambiente de execução seja limpo e não interfira no sistema do usuário, o Kintsugi utiliza Namespaces do Linux para criar um ambiente de montagem isolado. Isso permite realizar montagens (como o fuse-overlayfs) sem precisar de privilégios de `root` no sistema host.
 
-Importante, UMU não será usado nos namespaces, ele já cria um ambiente isolado para se proprio.
+Importante: UMU não será usado nos namespaces, ele já cria um ambiente isolado para si próprio.
 
 ## 4. Workflow do Comando `run`
 
-O comando para rodar uma build é `kintsugi run [modlist name] [perfil]`
+O comando para rodar uma build é `kintsugi run [nome do modlist] [perfil]`
 
 1.  **Identificar Composição Ativa**: O executor localiza o modlist e resolve o link simbólico `active` para encontrar o caminho da composição no `/store`.
 2.  **Resolver Perfil de Execução**:
     - O executor combina o nome do perfil fornecido (ou `default` se nenhum for) com o caminho base: `kintsugi/exec/[perfil].run.json`.
-    - Exemplo: `kintsugi run [modpaack] editor` tentará localizar `kintsugi/exec/editor.run.json`.
+    - Exemplo: `kintsugi run [modpack] editor` tentará localizar `kintsugi/exec/editor.run.json`.
     - Exemplo: `kintsugi run` tentará localizar `kintsugi/exec/default.run.json`.
 3.  **Localizar Manifesto**: O executor procura pelo arquivo de manifesto resolvido na raiz da composição ativa (via `merged` layer). Se não encontrar, o comando falha.
 4.  **Montar Overlay**: O `mount -t overlay` é executado dentro de um namespace isolado.

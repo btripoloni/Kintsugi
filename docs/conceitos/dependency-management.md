@@ -9,10 +9,10 @@ inspirado no Nix, onde cada mod declara suas próprias dependências.
 No modelo antigo, para compor um modlist, o usuário precisava definir cada `Shard` individualmente e depois listá-los manualmente na ordem de carregamento correta dentro da `composição`.
 
 ```text
-Mods: [Game, ModA, ModB, MobC]
+Mods: [Game, ModA, ModB, ModC]
 Composition:
   Name: "modlist"
-  layeys: [Game, ModC, ModA, ModB]
+  layers: [Game, ModC, ModA, ModB]
 ```
 
 Isso se torna insustentável em modlists grandes. Se o `Mod B` depende do `Mod A`, essa informação deve estar contida na definição do `Mod B`.
@@ -23,15 +23,14 @@ Cada `Shard` agora declara suas próprias dependências. O sistema é responsáv
 
 ### 2.1 Estrutura do Shard
 
-Conforme definido em [Shards](./shards.md), os chards incluem um campo `dependencies`.
-```
+Conforme definido em [Shards](./shards.md), os shards incluem um campo `dependencies`.
 
 ### 2.2 Exemplo de Uso
 
 Agora, as dependências são declaradas diretamente no `Shard` que precisa delas.
 
 ```text
-Mods: [Game, ModA, ModB, MobC]
+Mods: [Game, ModA, ModB, ModC]
 
 ModB:
   name: "modB"
@@ -39,7 +38,7 @@ ModB:
 
 Composition:
   Name: "modlist"
-  layeys: [Game, ModC, ModB]
+  layers: [Game, ModC, ModB]
 ```
 
 ## 3. Algoritmo de Resolução

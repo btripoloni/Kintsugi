@@ -51,12 +51,17 @@ dentro haverá as seguintes pastas
 
 Para entender como usar o Kintsugi, é importante conhecer seus blocos de construção:
 
--   [**Shards**](./shards.md): As unidades atômicas do Kintsugi. Um Shard é uma receita para produzir um conjunto de arquivos no Store, seja um mod, um patch de configuração ou a build final de um modlist.
--   [**Fontes (Sources)**](./sources.md): Mecanismos que o Kintsugi usa para obter conteúdo, como baixar de uma URL (`fetch_url`), copiar de um diretório local (`fetch_local`) ou até mesmo gerar arquivos dinamicamente (`write_text`).
--   [**Gerenciamento de Dependências**](./dependency-management.md): Explica como Kintsugi resolve recursivamente as dependências entre Shards, garantindo que tudo seja carregado na ordem correta.
--   [**Vases**](./vases.md): Um sistema para gerenciar assets grandes e imutáveis (como os arquivos base de um jogo) fora do Store principal, de forma eficiente e compartilhada.
--   [**Fluxo de Execução (Run Workflow)**](./run-workflow.md): Detalha como o Kintsugi usa tecnologias como OverlayFS para rodar uma build imutável permitindo, ao mesmo tempo, que o jogo salve arquivos e configurações de forma persistente.
--   [**O Interpretador**](./interpreter.md): Descreve o ambiente TypeScript e a API disponível para escrever as expressões do seu modlist.
--   [**builds**](./builds.md): Descreve como uma build deve ser feita
--   [**Garbage Collection**](./garbage-collector.md): processo de limpesa de shards não usados.
--   [**Store**](./store.md): O armazenamento dos Shards
+### Processos
+-   [**Interpretação**](./processos/interpretacao.md): Como o interpretador executa expressões TypeScript e gera receitas JSON.
+-   [**Compilação**](./processos/compilacao.md): Como o compilador lê receitas, baixa fontes e monta builds no Store.
+-   [**Execução**](./processos/execucao.md): Como o executor roda uma build usando OverlayFS e namespaces.
+
+### Conceitos
+-   [**Shards**](./conceitos/shards.md): As unidades atômicas do Kintsugi. Um Shard é uma receita para produzir um conjunto de arquivos no Store.
+-   [**Fontes (Sources)**](./conceitos/sources.md): Mecanismos para obter conteúdo (URL, local, gerado dinamicamente).
+-   [**Gerenciamento de Dependências**](./conceitos/dependency-management.md): Como o Kintsugi resolve dependências recursivamente.
+-   [**Vases**](./conceitos/vases.md): Sistema para gerenciar assets grandes e imutáveis fora do Store.
+-   [**Store**](./conceitos/store.md): O armazenamento imutável dos Shards.
+-   [**Receitas**](./processos/interpretacao.md): Descrição das receitas JSON geradas pelo interpretador.
+-   [**Builds**](./processos/compilacao.md): Como as builds são criadas e gerenciadas.
+-   [**Garbage Collection**](./conceitos/garbage-collector.md): Processo de limpeza de shards não usados.

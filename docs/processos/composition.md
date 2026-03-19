@@ -1,8 +1,8 @@
-Uma composição e um shard que explica ao compilador como deve formar o sistema de arquivos uma modlist.
-ele deve ficar no store junto com os outros shards.
-ele vai receber o nome, lista de mods, e outras informações que vão ajudar o compilador.
+Uma composição é um shard que explica ao compilador como deve formar o sistema de arquivos de uma modlist.
+Ela deve ficar no store junto com os outros shards.
+Ela vai receber o nome, lista de mods e outras informações que vão ajudar o compilador.
 
-Exemplo de como uma composição é, bem similar ao uma derivação do nix.
+Exemplo de como uma composição é, bem similar a uma derivação do nix.
 
 ```json
 {
@@ -10,7 +10,7 @@ Exemplo de como uma composição é, bem similar ao uma derivação do nix.
     "src": {
       "type": "build",
       "source": "build",
-      "layers": [ // Odem das camadas 
+      "layers": [ // Ordem das camadas
         "87d173fde2a310f689e131926624283b-skyrimse-1.16.1170",
         "aa322c36a09e696d40f84215bdb8770e-run-spec-launcher-1.0.0",
         "0841c53c2c1377ecdcd5e68ef52c7ac4-skse-2.2.6",
@@ -25,4 +25,4 @@ Exemplo de como uma composição é, bem similar ao uma derivação do nix.
 ```
 
 # Como a composição será montada?
-Cabe ao kintsugi criar hard links na pasta da composição substituindo os links que vieram por ultimo.
+Cabe ao kintsugi criar hard links na pasta da composição, substituindo os links que vieram por último.
