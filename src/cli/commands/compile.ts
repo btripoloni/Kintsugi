@@ -1,8 +1,9 @@
-import { readRecipeByName } from "./store/store.ts";
-import { executeLocal } from "./sources/local.ts";
-import { executeUrl } from "./sources/url.ts";
-import { executeComposition } from "./sources/composition.ts";
-import type { FetchLocal, FetchUrl, Composition, Fetcher } from "./types/fetchers.ts";
+import { join } from "jsr:@std/path";
+import { readRecipeByName } from "../../compiler/src/store/store.ts";
+import { executeLocal } from "../../compiler/src/sources/local.ts";
+import { executeUrl } from "../../compiler/src/sources/url.ts";
+import { executeComposition } from "../../compiler/src/sources/composition.ts";
+import type { FetchLocal, FetchUrl, Composition, Fetcher } from "../../compiler/src/types/fetchers.ts";
 
 interface CliArgs {
   recipeName: string;
@@ -13,7 +14,7 @@ interface CliArgs {
 
 function parseArgs(): CliArgs {
   const args = Deno.args.slice(1);
-  
+
   const recipeName = args[1];
   if (!recipeName) {
     console.error("Usage: kintsugi compile <recipe-name> --store <store-dir> --modlist <modlist-dir> --output <output-dir>");
@@ -57,7 +58,7 @@ async function executeSource(fetcher: Fetcher, modlistRoot: string, outputDir: s
 export async function compileCommand(): Promise<void> {
   if (Deno.args.includes("--help") || Deno.args.includes("-h")) {
     console.log(`
-Kintsugi Compiler
+Kintsugi Compile
 
 Usage:
   kintsugi compile <recipe-name> --store <store-dir> --modlist <modlist-dir> --output <output-dir>
@@ -74,7 +75,7 @@ Options:
   const args = parseArgs();
 
   const recipe = await readRecipeByName(args.store, args.recipeName);
-  
+
   if (!recipe) {
     console.error(`Error: recipe '${args.recipeName}' not found`);
     Deno.exit(1);
@@ -86,5 +87,3 @@ Options:
 
   console.log(`Compiled '${recipe.out}' to '${args.output}'`);
 }
-
-compileCommand();

@@ -41,7 +41,6 @@ export async function mkComposition(
     name,
     layers,
     entrypoint,
-    umu,
     args,
     env,
     permissions,

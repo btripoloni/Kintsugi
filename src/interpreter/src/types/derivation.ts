@@ -13,7 +13,6 @@ export interface BuildOptions {
   name: string;
   layers: Derivation[];
   entrypoint?: string;
-  umu?: string;
   args?: string[];
   env?: Record<string, string>;
   permissions?: string[];
