@@ -3,6 +3,7 @@ import "react/jsx-runtime";
 import { Box, render, Spacer, Text, useApp } from "ink";
 import { parseRunArgs, type RunArgs, runModlist } from "./commands/run.ts";
 import { type CompileArgs, compileCommand, parseCompileArgs } from "./commands/compile.ts";
+import { type InitArgs, initCommand, parseInitArgs } from "./commands/init.ts";
 
 interface CliProps {
     args: string[];
@@ -18,6 +19,7 @@ function Help() {
             <Spacer />
             <Text>Commands:</Text>
             <Text color="gray">compile Compile a recipe into a composition</Text>
+            <Text color="gray">init Initialize a new modlist</Text>
             <Text color="gray">run Run a modlist</Text>
             <Spacer />
             <Text>Options:</Text>
@@ -74,6 +76,24 @@ function CompileHelp() {
     );
 }
 
+function InitHelp() {
+    return (
+        <Box flexDirection="column">
+            <Text bold color="cyan">Kintsugi Init</Text>
+            <Spacer />
+            <Text>Usage:</Text>
+            <Text color="gray">kintsugi init &lt;name&gt; [--force]</Text>
+            <Spacer />
+            <Text>Arguments:</Text>
+            <Text color="gray">name Modlist name</Text>
+            <Spacer />
+            <Text>Options:</Text>
+            <Text color="gray">--force, -f Overwrite existing files</Text>
+            <Text color="gray">--help, -h Show this help message</Text>
+        </Box>
+    );
+}
+
 function App({ args }: CliProps) {
     const { exit } = useApp();
     const [loading, setLoading] = useState(false);
@@ -109,6 +129,14 @@ function App({ args }: CliProps) {
                     const compileArgs: CompileArgs = parseCompileArgs(args.slice(1));
                     setOutput(`Compiling recipe '${compileArgs.recipeName}'...`);
                     await compileCommand(compileArgs);
+                } else if (command === "init") {
+                    if (args.includes("--help") || args.includes("-h")) {
+                        return;
+                    }
+
+                    const initArgs: InitArgs = parseInitArgs(args.slice(1));
+                    setOutput(`Initializing modlist '${initArgs.name}'...`);
+                    await initCommand(initArgs);
                 } else {
                     setError(`Unknown command: ${command}`);
                 }
@@ -133,6 +161,10 @@ function App({ args }: CliProps) {
 
     if (command === "compile" && (args.includes("--help") || args.includes("-h"))) {
         return <CompileHelp />;
+    }
+
+    if (command === "init" && (args.includes("--help") || args.includes("-h"))) {
+        return <InitHelp />;
     }
 
     if (!command) {
@@ -209,7 +241,15 @@ async function main() {
         }
     }
 
-    const instance = await render(<App args={args.slice(1)} />, renderOptions);
+    if (command === "init") {
+        if (showHelp) {
+            const instance = await render(<InitHelp />, renderOptions);
+            await instance.waitUntilExit();
+            Deno.exit(0);
+        }
+    }
+
+    const instance = await render(<App args={[command, ...args.slice(1)]} />, renderOptions);
     await instance.waitUntilExit();
 }
 
