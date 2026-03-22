@@ -185,15 +185,17 @@ const command = args[0];
 const showHelp = args.includes("--help") || args.includes("-h");
 
 async function main() {
+    const renderOptions = { exitOnCtrlC: true };
+
     if (!command || command === "--help" || command === "-h") {
-        const instance = await render(<Help />);
+        const instance = await render(<Help />, renderOptions);
         await instance.waitUntilExit();
         Deno.exit(0);
     }
 
     if (command === "run") {
         if (showHelp) {
-            const instance = await render(<RunHelp />);
+            const instance = await render(<RunHelp />, renderOptions);
             await instance.waitUntilExit();
             Deno.exit(0);
         }
@@ -201,13 +203,13 @@ async function main() {
 
     if (command === "compile") {
         if (showHelp) {
-            const instance = await render(<CompileHelp />);
+            const instance = await render(<CompileHelp />, renderOptions);
             await instance.waitUntilExit();
             Deno.exit(0);
         }
     }
 
-    const instance = await render(<App args={args.slice(1)} />);
+    const instance = await render(<App args={args.slice(1)} />, renderOptions);
     await instance.waitUntilExit();
 }
 
