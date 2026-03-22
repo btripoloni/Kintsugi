@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "react/jsx-runtime";
-import { Box, render, Spacer, Text } from "ink";
+import { Box, render, Spacer, Text, useApp } from "ink";
 import { parseRunArgs, type RunArgs, runModlist } from "./commands/run.ts";
 import { type CompileArgs, compileCommand, parseCompileArgs } from "./commands/compile.ts";
 
@@ -75,6 +75,7 @@ function CompileHelp() {
 }
 
 function App({ args }: CliProps) {
+    const { exit } = useApp();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [output, setOutput] = useState<string | null>(null);
@@ -115,11 +116,12 @@ function App({ args }: CliProps) {
                 setError(e instanceof Error ? e.message : String(e));
             } finally {
                 setLoading(false);
+                exit();
             }
         }
 
         execute();
-    }, [args, command]);
+    }, [args, command, exit]);
 
     if (command === "--help" || command === "-h") {
         return <Help />;
@@ -142,6 +144,19 @@ function App({ args }: CliProps) {
             <Box flexDirection="column">
                 <Text color="red">{error}</Text>
                 <Text color="gray">Run 'kintsugi --help' for usage information</Text>
+            </Box>
+        );
+    }
+
+    if (!command) {
+        return <Help />;
+    }
+
+    if (command && !loading && output) {
+        return (
+            <Box flexDirection="column">
+                <Text color="green">Done!</Text>
+                {output && <Text>{output}</Text>}
             </Box>
         );
     }
