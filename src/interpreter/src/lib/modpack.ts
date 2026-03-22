@@ -1,10 +1,6 @@
-import { BuildOptions, Derivation, Source } from "./types.ts";
+import { BuildOptions, Derivation, Source } from "../types/derivation.ts";
 import { hashDerivation } from "./hash.ts";
 
-/**
- * Resolves the flat list of all transitive dependencies for a set of derivations.
- * Maintains order: dependencies come BEFORE the derivation that depends on them.
- */
 export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
   const sorted: Derivation[] = [];
   const visited = new Set<string>();
@@ -20,7 +16,6 @@ export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
 
     processing.add(drv.out);
 
-    // Visit all dependencies first
     if (drv.deps) {
       for (const dep of drv.deps) {
         visit(dep);
@@ -42,25 +37,25 @@ export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
 export async function mkComposition(
   options: BuildOptions,
 ): Promise<Derivation> {
-  const { name, layers, entrypoint, umu, args, env, permissions, postbuild } =
-    options;
-
-  // Auto-resolve transitive dependencies to form the layers list
-  const resolvedLayers = resolveTransitiveLayers(layers);
-  const layerHashes = resolvedLayers.map((l) => l.out);
-
-  const src: Source = {
-    type: "fetch_build",
-    layers: layerHashes,
+  const {
+    name,
+    layers,
     entrypoint,
     umu,
     args,
     env,
     permissions,
+    postbuild,
+  } = options;
+
+  const resolvedLayers = resolveTransitiveLayers(layers);
+  const layerHashes = resolvedLayers.map((l) => l.out);
+
+  const src: Source = {
+    type: "composition",
+    layers: layerHashes,
   };
 
-  // The 'dependencies' field in the final recipe should also contain all transitive hashes
-  // to ensure the compiler can fetch everything it needs.
   const drv = await hashDerivation({
     name,
     version: "generated",

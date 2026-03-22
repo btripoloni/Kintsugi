@@ -96,11 +96,13 @@ export const sources = {
  * Função base para gerar um Shard (derivação) a partir de uma definição.
  * Utilizada internamente e por funções de alto nível.
  */
-export async function mkShard(shard: Omit<Derivation, "out">): Promise<Derivation> {
+export async function mkShard(
+  shard: Omit<Derivation, "out">,
+): Promise<Derivation> {
   const constructed_shard: Omit<Derivation, "out"> = {
     ...shard,
     // Garante que as dependências sejam mapeadas para seus hashes de saída
-    dependencies: shard.deps?.map(d => d.out) ?? [],
+    dependencies: shard.deps?.map((d) => d.out) ?? [],
   };
   return await hashDerivation(constructed_shard);
 }
@@ -124,7 +126,7 @@ export interface RunSpecArgs {
 export async function writeRunSpec(args: RunSpecArgs): Promise<Derivation> {
   // O caminho é sempre kintsugi/exec/[name].run.json
   const path = `kintsugi/exec/${args.name}.run.json`;
-  
+
   return await mkShard({
     name: `run-spec-${args.name}`,
     version: "1.0.0",

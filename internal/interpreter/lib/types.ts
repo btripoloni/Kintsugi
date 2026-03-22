@@ -3,10 +3,10 @@ export interface FetchUrl {
   url: string;
   sha256: string;
   unpack?: boolean;
-  method?: "GET" | "POST";       // <--- Adicionado
+  method?: "GET" | "POST"; // <--- Adicionado
   headers?: Record<string, string>; // <--- Adicionado
   cookies?: Record<string, string>; // <--- Adicionado
-  body?: string;                 // <--- Adicionado
+  body?: string; // <--- Adicionado
   postFetch?: string;
 }
 
@@ -88,23 +88,23 @@ export type Source =
   | BlankSource;
 
 export interface Derivation {
-    name: string;
-    version: string;
-    out: string; // [hash]-[name]-[version]
-    src: Source;
-    dependencies?: string[]; // Hashes of dependencies (used for recipe JSON)
-    deps?: Derivation[];     // Full objects (used for internal resolution)
-    permissions?: string[];
-    postbuild?: string;
+  name: string;
+  version: string;
+  out: string; // [hash]-[name]-[version]
+  src: Source;
+  dependencies?: string[]; // Hashes of dependencies (used for recipe JSON)
+  deps?: Derivation[]; // Full objects (used for internal resolution)
+  permissions?: string[];
+  postbuild?: string;
 }
 
 export interface BuildOptions {
-    name: string;
-    layers: Derivation[];    // Can be a list of roots or individual layers
-    entrypoint?: string;
-    umu?: string;
-    args?: string[];
-    env?: Record<string, string>;
-    permissions?: string[];
-    postbuild?: string;
+  name: string;
+  layers: Derivation[]; // Can be a list of roots or individual layers
+  entrypoint?: string;
+  umu?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  permissions?: string[];
+  postbuild?: string;
 }
