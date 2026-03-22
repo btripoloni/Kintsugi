@@ -3,3 +3,9 @@ bin/
 .gocache
 kintsugi-compiler
 kintsugi
+
+# Deno
+.deno/
+node_modules/
+deno.lock
+*.local
