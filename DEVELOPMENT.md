@@ -386,6 +386,25 @@ kintsugi vase remove skyrim-se-1.6.1170
 kintsugi vase list
 ```
 
+### 8.4 Regras de Negócio
+
+#### 8.4.1 Nomenclatura Automática
+Vases criados com nome base "skyrim" recebem sufixo numérico automático:
+- Primeiro "skyrim" → "skyrim-1"
+- Segundo "skyrim" → "skyrim-2"
+- E assim sucessivamente
+
+#### 8.4.2 Armazenamento
+Vases são armazenados em `~/.kintsugi/vases/<name>/` (diferente de store/ e recipes/).
+
+#### 8.4.3 Comportamento do Fetcher
+Ao usar um vase em uma receita, cada ARQUIVO é linkado individualmente para o output, mantendo a estrutura de diretórios original. O vase em si nunca é linkado como um todo.
+
+#### 8.4.4 Hardlinks
+- Cópia de pasta inteira via hardlinks arquivo por arquivo
+- Preserva estrutura de diretórios
+- Erros AlreadyExists removem e recriam o link (mesmo padrão de composition.ts)
+
 ---
 
 ## 9. Garbage Collector

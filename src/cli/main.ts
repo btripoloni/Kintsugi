@@ -2,6 +2,7 @@ import { parseRunArgs, type RunArgs, runModlist } from "./commands/run.ts";
 import { type CompileArgs, compileCommand, parseCompileArgs } from "./commands/compile.ts";
 import { type BuildArgs, buildCommand, parseBuildArgs } from "./commands/build.ts";
 import { type InitArgs, initCommand, parseInitArgs } from "./commands/init.ts";
+import { parseVaseArgs, type VaseArgs, vaseCommand } from "./commands/vase.ts";
 
 const args = Deno.args;
 const command = args[0];
@@ -30,6 +31,10 @@ async function runCommandDirect(command: string, commandArgs: string[]): Promise
             console.log(`Initializing modlist '${initArgs.name}'...`);
             await initCommand(initArgs);
             return 0;
+        } else if (command === "vase") {
+            const vaseArgs: VaseArgs = parseVaseArgs(commandArgs);
+            await vaseCommand(vaseArgs);
+            return 0;
         } else {
             console.error(`Unknown command: ${command}`);
             return 1;
@@ -52,6 +57,7 @@ Commands:
   compile Compile a recipe into a composition
   init    Initialize a new modlist
   run     Run a modlist
+  vase    Manage vases (game installations)
 
 Options:
   --help, -h Show this help message
@@ -59,6 +65,7 @@ Options:
 Examples:
   kintsugi build skyrim
   kintsugi run skyrim default
+  kintsugi vase add skyrim /path/to/game
 `);
 }
 
@@ -137,6 +144,32 @@ Arguments:
 Examples:
   kintsugi build skyrim
   kintsugi build skyrim --root ~/.kintsugi
+`);
+        Deno.exit(0);
+    }
+
+    if (command === "vase" && showHelp) {
+        console.log(`
+Kintsugi Vase
+
+Usage:
+  kintsugi vase <command> [options]
+
+Commands:
+  add <name> <path>    Add a new vase from a directory
+  remove <name>        Remove a vase
+  list                 List all vases
+  info <name>          Show vase metadata
+
+Options:
+  --root <dir>         Kintsugi root directory (default: .kintsugi)
+  --help, -h          Show this help message
+
+Examples:
+  kintsugi vase add skyrim /path/to/game
+  kintsugi vase list
+  kintsugi vase remove skyrim-1
+  kintsugi vase info skyrim-1
 `);
         Deno.exit(0);
     }

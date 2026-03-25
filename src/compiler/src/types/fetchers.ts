@@ -29,8 +29,14 @@ export interface Composition extends BaseFetcher {
     layers: string[];
 }
 
+export interface FetchVase extends BaseFetcher {
+    type: "vase";
+    vase: string;
+}
+
 export type Fetcher =
     | FetchUrl
     | FetchLocal
     | WriteJson
-    | Composition;
+    | Composition
+    | FetchVase;
