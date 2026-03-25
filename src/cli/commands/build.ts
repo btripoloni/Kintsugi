@@ -1,5 +1,6 @@
 import { join } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
+import { getKintsugiRoot } from "../../core/paths.ts";
 import { interpretModlist } from "../../interpreter/src/interpreter.ts";
 import { recipeExists, saveRecipe } from "../../compiler/src/store/store.ts";
 import { executeUrl } from "../../compiler/src/sources/url.ts";
@@ -16,7 +17,7 @@ export function parseBuildArgs(args: string[] = Deno.args.slice(1)): BuildArgs {
     const rootIndex = args.indexOf("--root");
     const root = rootIndex !== -1 && rootIndex + 1 < args.length
         ? args[rootIndex + 1]
-        : Deno.env.get("KINTSUGI_ROOT") || ".kintsugi";
+        : getKintsugiRoot();
 
     const filteredArgs = args.filter((arg) =>
         arg !== "--root" &&
@@ -144,7 +145,7 @@ Usage:
   kintsugi build [--root <kintsugi-root>]
 
 Options:
-  --root           Kintsugi root directory (default: .kintsugi)
+  --root           Kintsugi root directory (default: ~/.kintsugi)
   --help, -h       Show this help message
 
 Note: Run from inside a modlist directory, or provide <modlist-name>

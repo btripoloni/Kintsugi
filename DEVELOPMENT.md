@@ -28,7 +28,7 @@ Expressão (TS) -> Receita (JSON) -> Build (Store)
 
 ### 2.1 Diretório do Kintsugi (`~/.kintsugi/`)
 ```
-.kintsugi/
+~/.kintsugi/
 ├── modlists/      # Modlists do usuário (cada uma com main.ts, deno.json)
 ├── recipes/       # Receitas JSON geradas pelo interpretador
 ├── vases/         # Assets grandes/imutáveis (jogos base)

@@ -1,4 +1,5 @@
 import { join } from "jsr:@std/path";
+import { getKintsugiRoot } from "../../core/paths.ts";
 import { readEnvironmentConfig, readRunManifest } from "../../interpreter/src/lib/environment.ts";
 import { executeWithOverlay } from "../../core/executor/executor.ts";
 
@@ -12,7 +13,7 @@ export function parseRunArgs(args: string[] = Deno.args.slice(1)): RunArgs {
     const rootIndex = args.indexOf("--root");
     const kintsugiRoot = rootIndex !== -1 && rootIndex + 1 < args.length
         ? args[rootIndex + 1]
-        : Deno.env.get("KINTSUGI_ROOT") || ".kintsugi";
+        : getKintsugiRoot();
 
     const filteredArgs = args.filter((arg) =>
         arg !== "--root" &&
@@ -73,7 +74,7 @@ Usage:
 Arguments:
   modlist-name     Name of the modlist to run
   profile          Execution profile (default: default)
-  --root           Kintsugi root directory (default: .kintsugi)
+  --root           Kintsugi root directory (default: ~/.kintsugi)
   --help, -h       Show this help message
 
 Examples:

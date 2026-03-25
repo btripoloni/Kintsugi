@@ -1,4 +1,5 @@
 import { join } from "jsr:@std/path";
+import { getKintsugiRoot } from "../../core/paths.ts";
 import { addVase, getVaseMetadata, listVases, removeVase } from "../../compiler/src/store/vase.ts";
 
 export interface VaseArgs {
@@ -69,7 +70,7 @@ Commands:
   info <name>          Show vase metadata
 
 Options:
-  --root <dir>         Kintsugi root directory (default: .kintsugi)
+  --root <dir>         Kintsugi root directory (default: ~/.kintsugi)
   --help, -h          Show this help message
 
 Examples:
@@ -82,7 +83,7 @@ Examples:
     }
 
     const args = vaseArgs || parseVaseArgs();
-    const root = args.root || ".kintsugi";
+    const root = args.root || getKintsugiRoot();
 
     switch (args.subcommand) {
         case "add": {

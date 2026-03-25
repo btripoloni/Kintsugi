@@ -85,7 +85,7 @@ Usage:
 Arguments:
   modlist-name     Name of the modlist to run
   profile          Execution profile (default: default)
-  --root           Kintsugi root directory (default: .kintsugi)
+  --root           Kintsugi root directory (default: ~/.kintsugi)
   --help, -h       Show this help message
 
 Examples:
@@ -138,7 +138,7 @@ Usage:
 
 Arguments:
   modlist-name     Name of the modlist to build
-  --root           Kintsugi root directory (default: .kintsugi)
+  --root           Kintsugi root directory (default: ~/.kintsugi)
   --help, -h       Show this help message
 
 Examples:
@@ -162,7 +162,7 @@ Commands:
   info <name>          Show vase metadata
 
 Options:
-  --root <dir>         Kintsugi root directory (default: .kintsugi)
+  --root <dir>         Kintsugi root directory (default: ~/.kintsugi)
   --help, -h          Show this help message
 
 Examples:

@@ -1,4 +1,5 @@
 import { join } from "jsr:@std/path";
+import { getKintsugiRoot } from "../../core/paths.ts";
 import { readRecipeByName } from "../../compiler/src/store/store.ts";
 import { executeLocal } from "../../compiler/src/sources/local.ts";
 import { executeUrl } from "../../compiler/src/sources/url.ts";
@@ -37,7 +38,7 @@ export function parseCompileArgs(args: string[] = Deno.args.slice(1)): CompileAr
     const store = storeIndex !== -1 ? args[storeIndex + 1] : "store";
     const modlist = modlistIndex !== -1 ? args[modlistIndex + 1] : ".";
     const output = outputIndex !== -1 ? args[outputIndex + 1] : "output";
-    const root = rootIndex !== -1 ? args[rootIndex + 1] : ".kintsugi";
+    const root = rootIndex !== -1 ? args[rootIndex + 1] : getKintsugiRoot();
 
     return {
         recipeName,
@@ -86,7 +87,7 @@ Options:
   --store <dir>   Store directory (default: store)
   --modlist <dir> Modlist root directory (default: .)
   --output <dir>  Output directory (default: output)
-  --root <dir>    Kintsugi root directory (default: .kintsugi)
+  --root <dir>    Kintsugi root directory (default: ~/.kintsugi)
   --help, -h      Show this help message
 `);
         return;

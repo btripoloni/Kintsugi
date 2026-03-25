@@ -303,6 +303,22 @@ try {
 }
 ```
 
+### Paths Module
+
+Use `src/core/paths.ts` for handling Kintsugi root path. Never hardcode `.kintsugi` - always use the centralized function:
+
+```typescript
+import { getKintsugiRoot } from "../../core/paths.ts";
+
+// Returns ~/.kintsugi by default, or custom path via KINTSUGI_ROOT env var or --root flag
+const root = getKintsugiRoot();
+```
+
+The function resolves paths in this order:
+1. Custom root argument (if provided)
+2. `KINTSUGI_ROOT` environment variable
+3. `~/.kintsugi` (from HOME environment variable)
+
 ---
 
 ## 11. Prerequisites
