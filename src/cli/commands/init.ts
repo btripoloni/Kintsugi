@@ -20,7 +20,7 @@ export async function initCommand(initArgs?: InitArgs): Promise<void> {
 Kintsugi Init
 
 Usage:
-  kintsugi init [name] [--force]
+  kintsugi init <name> [--force]
 
 Arguments:
   name         Modlist name (required)
@@ -66,18 +66,24 @@ Options:
         4,
     );
 
-    const mainTsContent = `import { Derivation } from "kintsugi";
+    const mainTsContent = `import type { Source } from "kintsugi";
 
 export default {
     name: "${name}",
     version: "1.0.0",
-    out: "./output",
-    src: [],
-} satisfies Derivation;
+    src: {
+        type: "url",
+        url: "https://example.com/mod.zip",
+        sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    },
+} as const;
 `;
+
+    const modlistJsonContent = JSON.stringify({ name }, null, 2);
 
     await Deno.writeTextFile(denoJsonPath, denoJsonContent);
     await Deno.writeTextFile(mainTsPath, mainTsContent);
+    await Deno.writeTextFile(join(targetDir, "modlist.json"), modlistJsonContent);
 
     console.log(`Initialized kintsugi modlist '${name}' in ${targetDir}`);
 }

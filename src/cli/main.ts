@@ -1,5 +1,6 @@
 import { parseRunArgs, type RunArgs, runModlist } from "./commands/run.ts";
 import { type CompileArgs, compileCommand, parseCompileArgs } from "./commands/compile.ts";
+import { type BuildArgs, buildCommand, parseBuildArgs } from "./commands/build.ts";
 import { type InitArgs, initCommand, parseInitArgs } from "./commands/init.ts";
 
 const args = Deno.args;
@@ -10,13 +11,19 @@ async function runCommandDirect(command: string, commandArgs: string[]): Promise
     try {
         if (command === "run") {
             const runArgs: RunArgs = parseRunArgs(commandArgs);
-            console.log(`Running modlist '${runArgs.modlist}' with profile '${runArgs.profile}'...`);
+            console.log(
+                `Running modlist '${runArgs.modlist}' with profile '${runArgs.profile}'...`,
+            );
             await runModlist(runArgs);
             return 0;
         } else if (command === "compile") {
             const compileArgs: CompileArgs = parseCompileArgs(commandArgs);
             console.log(`Compiling recipe '${compileArgs.recipeName}'...`);
             await compileCommand(compileArgs);
+            return 0;
+        } else if (command === "build") {
+            const buildArgs: BuildArgs = parseBuildArgs(commandArgs);
+            await buildCommand(buildArgs);
             return 0;
         } else if (command === "init") {
             const initArgs: InitArgs = parseInitArgs(commandArgs);
@@ -41,15 +48,16 @@ Usage:
   kintsugi <command> [options]
 
 Commands:
+  build   Build a modlist (interpret + compile)
   compile Compile a recipe into a composition
-  init   Initialize a new modlist
-  run    Run a modlist
+  init    Initialize a new modlist
+  run     Run a modlist
 
 Options:
   --help, -h Show this help message
 
 Examples:
-  kintsugi compile myrecipe --store store --modlist ./modlist
+  kintsugi build skyrim
   kintsugi run skyrim default
 `);
 }
@@ -110,6 +118,25 @@ Arguments:
 Options:
   --force, -f  Overwrite existing files
   --help, -h   Show this help message
+`);
+        Deno.exit(0);
+    }
+
+    if (command === "build" && showHelp) {
+        console.log(`
+Kintsugi Build
+
+Usage:
+  kintsugi build <modlist-name> [--root <kintsugi-root>]
+
+Arguments:
+  modlist-name     Name of the modlist to build
+  --root           Kintsugi root directory (default: .kintsugi)
+  --help, -h       Show this help message
+
+Examples:
+  kintsugi build skyrim
+  kintsugi build skyrim --root ~/.kintsugi
 `);
         Deno.exit(0);
     }

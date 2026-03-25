@@ -31,7 +31,7 @@ Deno.test("parseInitArgs - parses -f short flag", () => {
     assertEquals(args.name, "mymodlist");
 });
 
-Deno.test("initCommand - creates folder with name and files inside", async (t) => {
+Deno.test("initCommand - creates folder with name and files inside", async () => {
     const tmpDir = await Deno.makeTempDir();
     const originalCwd = Deno.cwd();
 
@@ -43,14 +43,17 @@ Deno.test("initCommand - creates folder with name and files inside", async (t) =
         const folderPath = `${tmpDir}/skyrim`;
         const denoJsonPath = `${folderPath}/deno.json`;
         const mainTsPath = `${folderPath}/main.ts`;
+        const modlistJsonPath = `${folderPath}/modlist.json`;
 
         const folderExists = await Deno.stat(folderPath).then(() => true).catch(() => false);
         const denoJsonExists = await Deno.stat(denoJsonPath).then(() => true).catch(() => false);
         const mainTsExists = await Deno.stat(mainTsPath).then(() => true).catch(() => false);
+        const modlistJsonExists = await Deno.stat(modlistJsonPath).then(() => true).catch(() => false);
 
         assertEquals(folderExists, true);
         assertEquals(denoJsonExists, true);
         assertEquals(mainTsExists, true);
+        assertEquals(modlistJsonExists, true);
 
         const denoJson = await Deno.readTextFile(denoJsonPath);
         assertEquals(denoJson.includes('"jsr:@btripoloni/kintsugi"'), true);
@@ -64,7 +67,7 @@ Deno.test("initCommand - creates folder with name and files inside", async (t) =
     }
 });
 
-Deno.test("initCommand - throws when folder exists without --force", async (t) => {
+Deno.test("initCommand - throws when folder exists without --force", async () => {
     const tmpDir = await Deno.makeTempDir();
     const originalCwd = Deno.cwd();
 
@@ -83,7 +86,7 @@ Deno.test("initCommand - throws when folder exists without --force", async (t) =
     }
 });
 
-Deno.test("initCommand - overwrites folder with --force", async (t) => {
+Deno.test("initCommand - overwrites folder with --force", async () => {
     const tmpDir = await Deno.makeTempDir();
     const originalCwd = Deno.cwd();
 
@@ -101,7 +104,7 @@ Deno.test("initCommand - overwrites folder with --force", async (t) => {
     }
 });
 
-Deno.test("initCommand - requires name argument", async (t) => {
+Deno.test("initCommand - requires name argument", async () => {
     const tmpDir = await Deno.makeTempDir();
     const originalCwd = Deno.cwd();
 

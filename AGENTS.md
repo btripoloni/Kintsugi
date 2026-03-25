@@ -2,93 +2,158 @@
 
 This file provides guidelines for agentic coding agents working on the Kintsugi codebase.
 
-## Project Overview
+---
 
-> **IMPORTANT**: This project is being rewritten to use **Deno and TypeScript** instead of Go. All new code should be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
+## 1. Project Overview
 
-Kintsugi is a declarative, reproducible, and isolated modpack manager for games, written in TypeScript/Deno. It uses Deno for both the core engine and user recipes.
+> **IMPORTANT**: This project is being rewritten to use **Deno and TypeScript** instead of Go. All new code must be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
 
-## Build Commands
+Kintsugi is a declarative, reproducible, and isolated modpack manager for games, inspired by Nix. Written in TypeScript/Deno, it uses Deno for both the core engine and user recipes.
 
-### Running the Application
+### 1.1 Core Principles
+
+- **Declarative**: Define the desired end state; Kintsugi handles achieving it
+- **Reproducible**: A build is a pure function of its inputs - identical results anywhere
+- **Isolated**: Each build is self-contained and immutable in the Store, enabling multiple versions and rollbacks
+
+### 1.2 Architecture Components
+
+| Component | Responsibility |
+|-----------|----------------|
+| **Interpreter** | Executes TypeScript expressions (`main.ts`) and generates JSON recipes |
+| **Compiler** | Reads recipes, downloads sources, mounts builds in the Store |
+| **Executor** | Orchestrates interpreter + compiler, provides CLI (`run`, `build`, etc) |
+
+### 1.3 Workflow
+```
+Expression (TS) -> Recipe (JSON) -> Build (Store)
+```
+
+---
+
+## 2. Development Workflow
+
+### 2.1 Test-Driven Development (TDD)
+
+**This is mandatory for all implementations.**
+
+1. **Write tests first** before implementing any feature
+2. Place tests in `*_test.ts` files next to the implementation
+3. Show tests to the user for review before proceeding
+4. Run tests to verify they fail (expected behavior)
+5. Implement to make tests pass
+6. Refactor if needed while keeping tests passing
+
+```typescript
+// Test structure pattern
+Deno.test("FeatureName", async (t) => {
+    // 1. Setup Input
+    const tmpDir = await Deno.makeTempDir();
+    // ... setup test data
+
+    // 2. Setup Dependencies
+    const store = new Store(storeDir);
+    await store.init();
+
+    // 3. Execute
+    const result = await doSomething(ctx, store);
+
+    // 4. Verify
+    assertEquals(result, expected);
+});
+```
+
+### 2.2 Branch Strategy
+
+- **Always create a new branch** for each feature, fix, or enhancement
+- Branch naming convention: `feature/<name>`, `fix/<name>`, or `refactor/<name>`
+- **Never commit directly to main/master**
+- **Do not make any commits before user reviews the code**
+- Use Pull Requests for code review before merging
+
+### 2.3 Start Simple, Iterate
+
+- Begin with minimal implementation
+- Add complexity only when needed
+- Refactor and improve continuously
+- Prioritize correctness over cleverness
+
+---
+
+## 3. Running the Application
 
 ```bash
 # Run the CLI
-deno run --allow-all ./src/cli/main.ts
+deno run --allow-all ./src/cli/main.ts <command>
 
 # Run in watch mode during development
-deno run --watch --allow-all ./src/cli/main.ts
+deno run --watch --allow-all ./src/cli/main.ts <command>
 ```
 
-### Running Tests
+---
+
+## 4. Running Tests
 
 ```bash
 # Run all tests
 deno test ./src/
 
 # Run tests for a specific module
-deno test ./src/fs/
+deno test ./src/cli/
 
 # Run a single test
-deno test --filter TestCopyFile ./src/fs/
+deno test --filter "TestCommandName" ./src/
 
 # Run tests with verbose output
 deno test -v ./src/
 ```
 
-### Development Environment
+---
 
-The project is organized as a Deno project:
-- `./src/cli/` - Main CLI application
-- `./src/core/` - Core engine
-- `./src/plugins/` - Plugin system
+## 5. Code Style Guidelines
 
-Prerequisites:
-- Deno 2.0 or higher
-- fuse-overlayfs (for modpack execution)
-
-## Code Style Guidelines
-
-### General Principles
+### 5.1 General Principles
 
 - Use modern TypeScript and Deno features
 - Keep code simple and readable
 - No unnecessary comments (unless explaining complex logic)
 - Follow standard TypeScript conventions
 
-### Formatting
+### 5.2 Naming Conventions
 
-- Use `deno fmt` before committing
+| Type | Convention | Example |
+|------|------------|---------|
+| Files | kebab-case | `copy_test.ts`, `action.ts` |
+| Types/Interfaces | PascalCase | `Action`, `Step`, `Store` |
+| Functions/Methods | camelCase | `newStore`, `execute` |
+| Variables/Constants | camelCase | `modlistPath`, `isValid` |
+| Acronyms | Keep original | `URL`, not `Url` |
+
+### 5.3 Formatting
+
+- Use `deno fmt` before submitting
 - Use 4-space indentation
 - Keep lines under 100 characters when reasonable
 - Group imports: stdlib, then external packages
 
-### Naming Conventions
-
-- **Files**: kebab-case (e.g., `copy_test.ts`, `action.ts`)
-- **Types/Interfaces**: PascalCase (e.g., `Action`, `Step`, `Store`)
-- **Functions/Methods**: camelCase (e.g., `newStore`, `execute`)
-- **Variables/Constants**: camelCase or PascalCase for exported
-- **Acronyms**: Keep original case (e.g., `URL`, not `Url`)
-
-### Import Organization
+### 5.4 Import Organization
 
 ```typescript
 import { assertEquals } from "jsr:@std/assert";
+import { join } from "jsr:@std/path";
 import { Context } from "./context.ts";
 import { Store } from "./store.ts";
 ```
 
-### Error Handling
+### 5.5 Error Handling
 
-- Use `new Error()` with message strings
+- Use `new Error()` with descriptive message strings
 - Return errors early, avoid deep nesting
 - Handle errors at the appropriate level
-- Example pattern:
 
 ```typescript
-async function doSomething(ctx: Context): Promise<Result> {
-    const data = await fetchData();
+async function fetchData(ctx: Context): Promise<Data> {
+    const data = await fetchFromStore(ctx);
     if (!data) {
         throw new Error("failed to fetch data");
     }
@@ -96,19 +161,97 @@ async function doSomething(ctx: Context): Promise<Result> {
 }
 ```
 
-### Context Usage
+---
 
-- Pass `Deno.Kv` or custom Context objects for cancellation
-- Use `Deno.Kv` for persistent storage in tests
-- Check for cancellation in long-running operations
+## 6. Project Structure
 
-### Testing Conventions
+```
+kintsugi/
+├── src/
+│   ├── cli/                      # CLI application
+│   │   ├── main.ts               # Entry point
+│   │   ├── commands/             # CLI commands
+│   │   │   ├── init.ts
+│   │   │   ├── compile.ts
+│   │   │   └── run.ts
+│   │   └── tests/
+│   ├── interpreter/              # Interpreter (executes main.ts)
+│   │   └── src/
+│   │       ├── types/
+│   │       │   ├── derivation.ts  # Derivation, BuildOptions types
+│   │       │   ├── source.ts      # Source types
+│   │       │   └── environment.ts # Execution types
+│   │       └── lib/
+│   │           ├── modpack.ts    # Dependency resolution
+│   │           ├── hash.ts       # Hash generation
+│   │           └── environment.ts
+│   ├── compiler/                  # Compiler (builds from recipes)
+│   │   └── src/
+│   │       ├── sources/          # Source implementations
+│   │       │   ├── url.ts
+│   │       │   ├── local.ts
+│   │       │   ├── json.ts
+│   │       │   └── composition.ts
+│   │       ├── store/            # Store management
+│   │       │   └── store.ts
+│   │       └── types/
+│   │           ├── recipe.ts
+│   │           └── fetchers.ts
+│   └── core/                      # Shared core
+│       └── executor/
+│           └── executor.ts       # Execution with OverlayFS
+├── docs/                          # Documentation
+├── DEVELOPMENT.md                 # Development reference (this is YOUR reference)
+└── AGENTS.md                     # This file
+```
 
-- Test files: `*_test.ts` in same directory as implementation
+---
+
+## 7. Key Interfaces
+
+### 7.1 Derivation
+
+```typescript
+interface Derivation {
+  name: string;           // Descriptive name (e.g., "skyrim-se")
+  version: string;        // Version (e.g., "1.6.1170")
+  out: string;           // Output: "[hash]-[name]-[version]"
+  src: Source;           // Source type
+  dependencies?: string[]; // List of recipe names (format: "[hash]-[name]-[version]")
+  postbuild?: string;    // Shell script executed after source acquisition
+}
+```
+
+### 7.2 Source Types
+
+| Type | Description | Key Parameters |
+|------|-------------|----------------|
+| `url` | Download from remote URL | `url`, `sha256`, `unpack?`, `method?`, `headers?` |
+| `local` | Copy from local filesystem | `path` |
+| `write_json` | Create JSON file | `path`, `content` |
+| `vase` | Import from Vase collection | `vase` |
+| `composition` | Compose multiple shards | `layers` |
+
+### 7.3 Recipe
+
+```typescript
+interface Recipe {
+  out: string;           // "[hash]-[name]-[version]"
+  src: Fetcher;          // Source type
+  dependencies?: string[]; // Recipe names this depends on
+}
+```
+
+---
+
+## 8. Testing Conventions
+
+- Test files: `*_test.ts` in the same directory as the implementation
 - Test functions: `Deno.test("name", async (t) => { ... })`
 - Use `t.tempDir()` for temporary test files
 - Use `t.fail()` or `throw` for setup/assertion failures
-- Test structure pattern:
+
+### Test Structure
 
 ```typescript
 Deno.test("FeatureName", async (t) => {
@@ -128,41 +271,28 @@ Deno.test("FeatureName", async (t) => {
 });
 ```
 
-### Project Structure
+---
 
-```
-kintsugi/
-├── src/
-│   ├── cli/                # Main CLI application
-│   │   ├── main.ts         # CLI entry point
-│   │   └── commands/       # CLI command implementations
-│   ├── core/               # Core engine
-│   │   ├── fs/             # Filesystem operations
-│   │   ├── store/          # Nix-style store
-│   │   └── primitives/      # Build step actions
-│   ├── plugins/            # Plugin system
-│   └── interpreter/        # Deno integration
-└── docs/                   # Documentation
+## 9. Linting and Verification
+
+**Always run these before submitting:**
+
+```bash
+deno check ./src/
+deno fmt ./src/
+deno test ./src/
 ```
 
-### Module Guidelines
+---
+
+## 10. Module Guidelines
 
 - Each module should have a focused responsibility
-- Use interfaces to define contracts (see `src/core/primitives/action.ts`)
+- Use interfaces to define contracts
 - Export only what's necessary
 - Use factory functions like `createXxx()` or `newXxx()` for construction
 
-### Common Patterns
-
-#### Action Interface (Primitives)
-
-```typescript
-interface Action {
-    execute(ctx: Context, step: Step, store: Store): Promise<void>;
-}
-```
-
-#### Store Usage
+### Store Usage Pattern
 
 ```typescript
 const store = await Store.create(storeDir);
@@ -173,34 +303,38 @@ try {
 }
 ```
 
-### Linting
+---
 
-Run `deno check` and `deno fmt` before submitting changes:
+## 11. Prerequisites
 
-```bash
-deno check ./src/
-deno fmt ./src/
-```
+- Deno 2.0 or higher
+- fuse-overlayfs (for modpack execution via OverlayFS)
 
-### Working with the Codebase
+---
 
-- Use Deno for all runtime operations
-- Use JSR for package management
-- Test files use Deno's built-in test framework
-- The codebase is AI-generated - expect inconsistencies and be willing to refactor
+## 12. Your Reference: DEVELOPMENT.md
 
-### Branching Strategy
+The `DEVELOPMENT.md` file in the root directory contains comprehensive information about:
 
-- Always create a new branch for each feature, fix, or enhancement
-- Branch naming convention: `feature/<name>`, `fix/<name>`, or `refactor/<name>`
-- Never commit directly to main/master
-- Use Pull Requests for code review before merging
+- Project architecture and components
+- CLI commands and usage
+- Source types and parameters
+- Interpretador and Compiler workflows
+- Execution (Run) with OverlayFS
+- Vases and Garbage Collection
+- Build and Rollback mechanisms
+- Technical details (hashing, etc.)
 
-### Test-Driven Development (TDD)
+**Always consult DEVELOPMENT.md when implementing features.**
 
-- **Always write tests first** before implementing any feature
-- Tests should be placed in `*_test.ts` files next to the implementation
-- Show tests to user for review before proceeding with implementation
-- Run tests to verify they fail (expected behavior), then implement to make them pass
-- Use Deno's built-in test framework
-- Follow the same TDD approach for new sources, store operations, or CLI commands
+---
+
+## 13. Important Notes
+
+1. The codebase is AI-generated - expect inconsistencies and be willing to refactor
+2. Always write tests first (TDD)
+3. Create a branch for each feature/fix
+4. **Do not commit before user reviews the code**
+5. Keep iterations small and simple
+6. Use Deno for all runtime operations
+7. Test files use Deno's built-in test framework

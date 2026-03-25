@@ -9,13 +9,18 @@ export interface RunArgs {
 }
 
 export function parseRunArgs(args: string[] = Deno.args.slice(1)): RunArgs {
-    const modlist = args[1];
-    const profile = args[2] || "default";
-
     const rootIndex = args.indexOf("--root");
-    const kintsugiRoot = rootIndex !== -1
+    const kintsugiRoot = rootIndex !== -1 && rootIndex + 1 < args.length
         ? args[rootIndex + 1]
         : Deno.env.get("KINTSUGI_ROOT") || ".kintsugi";
+
+    const filteredArgs = args.filter((arg) =>
+        arg !== "--root" &&
+        (rootIndex === -1 || args.indexOf(arg) !== rootIndex + 1)
+    );
+
+    const modlist = filteredArgs[0];
+    const profile = filteredArgs[1] || "default";
 
     if (!modlist) {
         console.error("Usage: kintsugi run <modlist-name> [profile] [--root <kintsugi-root>]");
