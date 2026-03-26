@@ -15,7 +15,7 @@ function mockDrv(name: string, deps: Derivation[] = []): Derivation {
         out: `${name}-1.0.0`,
         src: dummySrc,
         deps,
-        dependencies: deps.map((d) => d.out),
+        dependencies: deps.map((d) => d.out!).filter((out): out is string => !!out),
     };
 }
 

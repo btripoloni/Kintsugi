@@ -59,7 +59,7 @@ Deno.test("hashDerivation - hash format is [hash]-[name]-[version]", async () =>
         dependencies: [],
     });
 
-    const parts = drv.out.split("-");
+    const parts = drv.out!.split("-");
     assertEquals(parts.length, 3);
     assertEquals(parts[1], "mymod");
     assertEquals(parts[2], "2.0.0");
@@ -78,10 +78,10 @@ Deno.test("hashDerivation - includes dependencies in hash calculation", async ()
         name: "dependentmod",
         version: "1.0.0",
         src: dummyJsonSrc,
-        dependencies: [base.out],
+        dependencies: [base.out!],
     });
 
-    assertEquals(withDeps.dependencies?.includes(base.out), true);
+    assertEquals(withDeps.dependencies?.includes(base.out!), true);
 });
 
 Deno.test("hashDerivation - handles composition source", async () => {
@@ -94,18 +94,18 @@ Deno.test("hashDerivation - handles composition source", async () => {
 
     const compositionSrc: Source = {
         type: "composition",
-        layers: [layer1.out],
+        layers: [layer1.out!],
     };
 
     const drv = await hashDerivation({
         name: "composed",
         version: "1.0.0",
         src: compositionSrc,
-        dependencies: [layer1.out],
+        dependencies: [layer1.out!],
     });
 
     assertExists(drv.out);
-    assertEquals(drv.out.includes("composed"), true);
+    assertEquals(drv.out!.includes("composed"), true);
 });
 
 Deno.test("hashDerivation - key ordering does not affect hash", async () => {

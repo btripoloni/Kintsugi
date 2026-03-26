@@ -20,9 +20,31 @@ export interface WriteJson {
     content: unknown;
 }
 
+export interface CompositionLayer {
+    name: string;
+    version: string;
+    src: Source;
+    dependencies?: string[];
+    deps?: Derivation[];
+    permissions?: string[];
+    postbuild?: string;
+    out?: string;
+}
+
 export interface Composition {
     type: "composition";
-    layers: string[];
+    layers: (string | CompositionLayer)[];
+}
+
+export interface Derivation {
+    name: string;
+    version: string;
+    src: Source;
+    dependencies?: string[];
+    deps?: Derivation[];
+    permissions?: string[];
+    postbuild?: string;
+    out?: string;
 }
 
 export type Source = FetchUrl | FetchLocal | WriteJson | Composition;

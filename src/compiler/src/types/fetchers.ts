@@ -24,9 +24,17 @@ export interface WriteJson extends BaseFetcher {
     content: unknown;
 }
 
+export interface CompositionLayer {
+    name: string;
+    version: string;
+    src: Fetcher;
+    dependencies?: string[];
+    out?: string;
+}
+
 export interface Composition extends BaseFetcher {
     type: "composition";
-    layers: string[];
+    layers: (string | CompositionLayer)[];
 }
 
 export interface FetchVase extends BaseFetcher {

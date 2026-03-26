@@ -30,9 +30,12 @@ Expressão (TS) -> Receita (JSON) -> Build (Store)
 ```
 ~/.kintsugi/
 ├── modlists/      # Modlists do usuário (cada uma com main.ts, deno.json)
-├── recipes/       # Receitas JSON geradas pelo interpretador
 ├── vases/         # Assets grandes/imutáveis (jogos base)
-└── store/         # Shards construídos (~/.kintsugi/store/[hash]-[nome]-[versão])
+└── store/         # Shards construídos e receitas
+    ├── [hash]-[nome]-[versão]/   # Shards individuais
+    ├── recipes/                   # Arquivos de receita JSON
+    │   └── [hash]-[nome]-[versão].json
+    └── compositions/              # Composições montadas
 ```
 
 ### 2.2 Estrutura de uma Modlist
@@ -237,39 +240,50 @@ export default {
 ## 5. O Interpretador
 
 ### 5.1 Responsabilidade
-Executar o `main.ts` e transformar o resultado em arquivos de receita JSON.
+Executar o `main.ts` e transformar o resultado em arquivos de receita JSON individuais para cada derivation.
 
-### 5.2 Fluxo
+### 5.2 Entrada do Interpretador
+O interpretador recebe um objeto `Derivation` que pode conter composition com layers como objetos Derivation (não só strings):
 
-1. Recebe caminho do arquivo `main.ts`
-2. Executa o arquivo com Deno
-3. Recebe o resultado (objeto Derivation)
-4. Gera hash SHA-256 (truncado para 32 caracteres) do objeto
-5. Salva receita em `~/.kintsugi/recipes/[hash]-[nome]-[versão].json`
-6. Retorna o hash da receita raiz para o executor
+```typescript
+interface CompositionLayer {
+    name: string;
+    version: string;
+    src: Source;
+    dependencies?: string[];
+    deps?: Derivation[];
+}
 
-### 5.3 Saída do Interpretador (receita JSON)
-
-```json
-{
-  "root": "[hash]-[nome]-[versão]",
-  "recipes": [
-    {
-      "out": "[hash]-[nome]-[versão]",
-      "src": { "type": "...", ... },
-      "dependencies": ["hash-dep1", "hash-dep2"],
-      "postbuild": "script shell opcional"
-    }
-  ]
+interface Composition {
+    type: "composition";
+    layers: (string | Derivation)[];  // Pode ser Derivation ou string (hash)
 }
 ```
 
-### 5.4 Resolução de Dependências
+### 5.3 Fluxo
+1. Recebe objeto Derivation do main.ts
+2. Se a source for composition com layers como objetos Derivation:
+   - Resolve dependências transicionalmente (ordenação topológica)
+   - Para cada derivation (incluindo as dos layers), gera hash SHA-256
+   - Salva arquivo individual por receita em `~/.kintsugi/store/recipes/[hash]-[nome]-[versão].json`
+   - Substitui os objetos Derivation nos layers por suas strings de hash
+3. Se a source for outro tipo:
+   - Gera hash da derivation
+   - Salva receita individual
+4. Retorna lista de todos os `out` (hashes) das receitas geradas
 
-O interpretador usa **ordenação topológica** (DFS) para resolver dependências:
-- Dependências sempre vêm antes dos dependentes
-- Deduplicação automática (game aparece apenas uma vez)
-- Falha se houver dependências circulares
+### 5.4 Saída do Interpretador
+Cada arquivo de receita individual salvo em `store/recipes/[hash]-[nome]-[versão].json`:
+
+```json
+{
+  "out": "[hash]-[nome]-[versão]",
+  "src": { "type": "...", ... },
+  "dependencies": ["hash-dep1", "hash-dep2"]
+}
+```
+
+A função principal retorna a lista de todos os `out` gerados.
 
 ---
 

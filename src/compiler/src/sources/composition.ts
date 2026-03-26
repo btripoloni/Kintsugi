@@ -1,8 +1,12 @@
 import { join } from "jsr:@std/path";
-import type { Composition } from "../types/fetchers.ts";
+import type { Composition, CompositionLayer } from "../types/fetchers.ts";
 import type { SourceContext } from "./local.ts";
 
 const STORE_DIR = "store";
+
+function getLayerString(layer: string | CompositionLayer): string {
+    return typeof layer === "string" ? layer : layer.out || "";
+}
 
 export async function executeComposition(
     fetcher: Composition,
@@ -11,7 +15,10 @@ export async function executeComposition(
     await Deno.mkdir(ctx.outputDir, { recursive: true });
 
     for (const layer of fetcher.layers) {
-        const layerPath = join(ctx.modlistRoot, STORE_DIR, layer);
+        const layerName = getLayerString(layer);
+        if (!layerName) continue;
+
+        const layerPath = join(ctx.modlistRoot, STORE_DIR, layerName);
 
         try {
             const entries = await Deno.readDir(layerPath);
@@ -71,5 +78,7 @@ async function copyDirAsLinks(srcDir: string, destDir: string): Promise<void> {
 }
 
 export function getCompositionDeps(fetcher: Composition): string[] {
-    return [...fetcher.layers];
+    return fetcher.layers
+        .map(getLayerString)
+        .filter((l): l is string => !!l);
 }

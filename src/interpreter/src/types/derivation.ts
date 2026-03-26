@@ -1,8 +1,10 @@
+export type Source = import("./source.ts").Source;
+
 export interface Derivation {
     name: string;
     version: string;
-    out?: string;
     src: Source;
+    out?: string;
     dependencies?: string[];
     deps?: Derivation[];
     permissions?: string[];
@@ -18,5 +20,3 @@ export interface BuildOptions {
     permissions?: string[];
     postbuild?: string;
 }
-
-export type Source = import("./source.ts").Source;

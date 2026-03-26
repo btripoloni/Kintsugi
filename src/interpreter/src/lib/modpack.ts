@@ -7,14 +7,15 @@ export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
     const processing = new Set<string>();
 
     function visit(drv: Derivation) {
-        if (visited.has(drv.out)) return;
-        if (processing.has(drv.out)) {
+        const out = drv.out;
+        if (!out || visited.has(out)) return;
+        if (processing.has(out)) {
             throw new Error(
-                `Circular dependency detected involving ${drv.name} (${drv.out})`,
+                `Circular dependency detected involving ${drv.name} (${out})`,
             );
         }
 
-        processing.add(drv.out);
+        processing.add(out);
 
         if (drv.deps) {
             for (const dep of drv.deps) {
@@ -22,8 +23,8 @@ export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
             }
         }
 
-        processing.delete(drv.out);
-        visited.add(drv.out);
+        processing.delete(out);
+        visited.add(out);
         sorted.push(drv);
     }
 
@@ -48,7 +49,7 @@ export async function mkComposition(
     } = options;
 
     const resolvedLayers = resolveTransitiveLayers(layers);
-    const layerHashes = resolvedLayers.map((l) => l.out);
+    const layerHashes = resolvedLayers.map((l) => l.out).filter((out): out is string => !!out);
 
     const src: Source = {
         type: "composition",

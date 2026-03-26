@@ -27,17 +27,23 @@ function sortKeysRecursively(obj: any): any {
 }
 
 export async function hashDerivation(
-    derivation: Omit<Derivation, "out"> & { name: string; version: string },
+    derivation: Derivation,
+    recipesDir?: string,
 ): Promise<Derivation> {
-    const { name, version, ...rest } = derivation;
+    const { name, version, src, dependencies, permissions, postbuild, ...rest } = derivation;
 
     const toHash: any = {
         name,
         version,
+        src,
+        dependencies,
+        permissions,
+        postbuild,
         ...rest,
     };
 
     delete toHash.deps;
+    delete toHash.out;
 
     const sortedToHash = sortKeysRecursively(toHash);
     const jsonString = JSON.stringify(sortedToHash);
@@ -49,14 +55,17 @@ export async function hashDerivation(
 
     const outName = `${hash}-${name}-${version}`;
 
-    const recipesDir = Deno.env.get("KINTSUGI_RECIPES_DIR");
-    if (recipesDir) {
+    const effectiveRecipesDir = recipesDir || Deno.env.get("KINTSUGI_RECIPES_DIR");
+    if (effectiveRecipesDir) {
         const fullRecipe: any = {
             out: outName,
-            ...rest,
+            src,
+            dependencies,
+            permissions,
+            postbuild,
         };
 
-        const path = join(recipesDir, `${outName}.json`);
+        const path = join(effectiveRecipesDir, `${outName}.json`);
         try {
             await Deno.writeTextFile(path, JSON.stringify(fullRecipe, null, 2));
         } catch (e) {
@@ -68,6 +77,10 @@ export async function hashDerivation(
         ...rest,
         name,
         version,
+        src,
+        dependencies,
+        permissions,
+        postbuild,
         out: outName,
     };
 }

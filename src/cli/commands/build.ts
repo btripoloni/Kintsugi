@@ -166,26 +166,34 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
     const modlistName = modlistPath.split("/").pop() || "unknown";
     console.log(`Building modlist '${modlistName}'...`);
 
-    const result = await interpretModlist(modlistPath);
-    const derivation = result.derivation;
-    const out = result.out;
+    const result = await interpretModlist(modlistPath, storeDir);
+    const derivations = result.derivations;
+    const rootOut = result.rootOut;
 
-    console.log(`Interpreted: ${out}`);
+    console.log(`Interpreted: ${rootOut} (${derivations.length} derivations)`);
 
-    const src = derivation.src as Fetcher;
+    for (const drv of derivations) {
+        const src = drv.src as Fetcher;
+        if (src.type !== "composition") {
+            await buildShard(drv.out!, src, modlistPath, storeDir);
+        }
+    }
 
-    if (src.type === "composition") {
-        await buildComposition(out, src.layers, storeDir);
+    const rootDrv = derivations.find((d) => d.out === rootOut);
+    const rootSrc = rootDrv?.src as Fetcher;
+
+    if (rootSrc?.type === "composition") {
+        const layerStrings = rootSrc.layers.filter((l): l is string => typeof l === "string");
+        await buildComposition(rootOut, layerStrings, storeDir);
     } else {
-        await buildShard(out, src, modlistPath, storeDir);
-        await buildComposition(out, [out], storeDir);
+        await buildComposition(rootOut, [rootOut], storeDir);
     }
 
     const targetModlistDir = join(args.root, "modlists", modlistName);
     await ensureDir(targetModlistDir);
     
     const activePath = join(targetModlistDir, "active");
-    const compositionPath = join(storeDir, "compositions", out);
+    const compositionPath = join(storeDir, "compositions", rootOut);
 
     try {
         await Deno.remove(activePath);
@@ -195,5 +203,5 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
 
     await Deno.symlink(compositionPath, activePath);
 
-    console.log(`Build complete. Active composition: ${out}`);
+    console.log(`Build complete. Active composition: ${rootOut}`);
 }

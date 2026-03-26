@@ -58,7 +58,7 @@ Deno.test("executor - resolves transitive dependencies", async () => {
         name: "dependent",
         version: "1.0.0",
         src: dummySrc,
-        dependencies: [base.out],
+        dependencies: [base.out!],
         deps: [base],
     });
 
@@ -86,14 +86,14 @@ Deno.test("executor - saves all recipes to recipes directory", async () => {
             name: "dependent",
             version: "1.0.0",
             src: dummySrc,
-            dependencies: [base.out],
+            dependencies: [base.out!],
             deps: [base],
         });
 
         const resolved = resolveTransitiveLayers([dependent]);
 
         for (const drv of resolved) {
-            const recipeFile = join(recipesDir, `${drv.out}.json`);
+            const recipeFile = join(recipesDir, `${drv.out!}.json`);
             await Deno.writeTextFile(
                 recipeFile,
                 JSON.stringify(
@@ -139,16 +139,16 @@ Deno.test("executor - handles {root, recipes} output format", async () => {
         name: "root",
         version: "1.0.0",
         src: dummySrc,
-        dependencies: [base.out],
+        dependencies: [base.out!],
         deps: [base],
     });
 
     const resolved = resolveTransitiveLayers([root]);
 
     const output: ExecutorResult = {
-        root: root.out,
+        root: root.out!,
         recipes: resolved.map((drv) => ({
-            out: drv.out,
+            out: drv.out!,
             src: drv.src,
             dependencies: drv.dependencies,
         })),
@@ -188,7 +188,7 @@ Deno.test(
                 ),
             );
 
-            const parts = drv.out.split("-");
+            const parts = drv.out!.split("-");
             assertEquals(parts.length, 3);
             assertEquals(parts[1], "mymod");
             assertEquals(parts[2], "2.1.0");
