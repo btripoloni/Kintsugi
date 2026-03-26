@@ -6,7 +6,7 @@ This file provides guidelines for agentic coding agents working on the Kintsugi 
 
 ## 1. Project Overview
 
-> **IMPORTANT**: This project is being rewritten to use **Deno and TypeScript** instead of Go. All new code must be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
+> **IMPORTANT**: This project is a **Deno monorepo** (turborepo). All code must be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
 
 Kintsugi is a declarative, reproducible, and isolated modpack manager for games, inspired by Nix. Written in TypeScript/Deno, it uses Deno for both the core engine and user recipes.
 
@@ -20,9 +20,8 @@ Kintsugi is a declarative, reproducible, and isolated modpack manager for games,
 
 | Component | Responsibility |
 |-----------|----------------|
-| **Interpreter** | Executes TypeScript expressions (`main.ts`) and generates JSON recipes |
-| **Compiler** | Reads recipes, downloads sources, mounts builds in the Store |
-| **Executor** | Orchestrates interpreter + compiler, provides CLI (`run`, `build`, etc) |
+| **SDK** | Library for users to create recipes in TypeScript |
+| **CLI** | Command-line interface (run, build, init, etc) |
 
 ### 1.3 Workflow
 ```
@@ -31,9 +30,36 @@ Expression (TS) -> Recipe (JSON) -> Build (Store)
 
 ---
 
-## 2. Development Workflow
+## 2. Monorepo Structure
 
-### 2.1 Test-Driven Development (TDD)
+```
+kintsugi/
+├── apps/
+│   └── cli/                      # CLI application
+│       ├── src/
+│       │   ├── main.ts           # Entry point
+│       │   ├── commands/        # CLI commands
+│       │   └── tests/           # CLI tests
+│       └── deno.json            # CLI configuration
+├── packages/
+│   └── sdk/                      # SDK for users to create recipes
+│       ├── src/
+│       │   ├── types/            # TypeScript types (Derivation, Source, etc)
+│       │   ├── lib/              # Core library (hash, modpack)
+│       │   ├── interpreter/      # Interprets main.ts
+│       │   ├── compiler/         # Compiles recipes
+│       │   ├── executor/         # Execution with OverlayFS
+│       │   └── index.ts          # SDK exports
+│       └── deno.json            # SDK configuration
+├── deno.json                    # Root configuration
+└── AGENTS.md                    # This file
+```
+
+---
+
+## 3. Development Workflow
+
+### 3.1 Test-Driven Development (TDD)
 
 **This is mandatory for all implementations.**
 
@@ -63,7 +89,7 @@ Deno.test("FeatureName", async (t) => {
 });
 ```
 
-### 2.2 Branch Strategy
+### 3.2 Branch Strategy
 
 - **Always create a new branch** for each feature, fix, or enhancement
 - Branch naming convention: `feature/<name>`, `fix/<name>`, or `refactor/<name>`
@@ -71,7 +97,7 @@ Deno.test("FeatureName", async (t) => {
 - **Do not make any commits before user reviews the code**
 - Use Pull Requests for code review before merging
 
-### 2.3 Start Simple, Iterate
+### 3.3 Start Simple, Iterate
 
 - Begin with minimal implementation
 - Add complexity only when needed
@@ -80,136 +106,129 @@ Deno.test("FeatureName", async (t) => {
 
 ---
 
-## 3. Running the Application
+## 4. Running the Application
+
+### CLI
 
 ```bash
-# Run the CLI
-deno run --allow-all ./src/cli/main.ts <command>
+# Run from apps/cli
+deno run --allow-all ./apps/cli/src/main.ts <command>
 
-# Run in watch mode during development
-deno run --watch --allow-all ./src/cli/main.ts <command>
+# Or use the task
+deno task -A ./apps/cli start <command>
+```
+
+### SDK
+
+The SDK is published to JSR as `@btripoloni/kintsugi-sdk`. Users import it in their modlists:
+
+```typescript
+import { Derivation, Source } from "@btripoloni/kintsugi-sdk";
 ```
 
 ---
 
-## 4. Running Tests
+## 5. Running Tests
 
 ```bash
 # Run all tests
-deno test ./src/
+deno test ./apps/cli/
+deno test ./packages/sdk/
 
-# Run tests for a specific module
-deno test ./src/cli/
+# Run tests for a specific package
+deno test ./packages/sdk/src/lib/
 
 # Run a single test
-deno test --filter "TestCommandName" ./src/
+deno test --filter "TestName" ./
 
 # Run tests with verbose output
-deno test -v ./src/
+deno test -v ./
 ```
 
 ---
 
-## 5. Code Style Guidelines
+## 6. Code Style Guidelines
 
-### 5.1 General Principles
+### 6.1 General Principles
 
 - Use modern TypeScript and Deno features
 - Keep code simple and readable
 - No unnecessary comments (unless explaining complex logic)
 - Follow standard TypeScript conventions
 
-### 5.2 Naming Conventions
+### 6.2 Naming Conventions
 
 | Type | Convention | Example |
 |------|------------|---------|
 | Files | kebab-case | `copy_test.ts`, `action.ts` |
+| Packages | kebab-case | `kintsugi-cli`, `kintsugi-sdk` |
 | Types/Interfaces | PascalCase | `Action`, `Step`, `Store` |
 | Functions/Methods | camelCase | `newStore`, `execute` |
 | Variables/Constants | camelCase | `modlistPath`, `isValid` |
 | Acronyms | Keep original | `URL`, not `Url` |
 
-### 5.3 Formatting
+### 6.3 Formatting
 
 - Use `deno fmt` before submitting
 - Use 4-space indentation
 - Keep lines under 100 characters when reasonable
-- Group imports: stdlib, then external packages
+- Group imports: stdlib, then external packages, then internal
 
-### 5.4 Import Organization
+### 6.4 Import Organization
 
 ```typescript
+// stdlib
 import { assertEquals } from "jsr:@std/assert";
 import { join } from "jsr:@std/path";
-import { Context } from "./context.ts";
-import { Store } from "./store.ts";
+
+// external packages
+import { something } from "npm:some-package";
+
+// internal (SDK)
+import { Context } from "@btripoloni/kintsugi-sdk";
 ```
 
-### 5.5 Error Handling
+### 6.5 Error Handling
 
 - Use `new Error()` with descriptive message strings
 - Return errors early, avoid deep nesting
 - Handle errors at the appropriate level
 
-```typescript
-async function fetchData(ctx: Context): Promise<Data> {
-    const data = await fetchFromStore(ctx);
-    if (!data) {
-        throw new Error("failed to fetch data");
-    }
-    // ... rest of function
+---
+
+## 7. Package Configuration
+
+### SDK (packages/sdk/deno.json)
+
+```json
+{
+  "name": "@btripoloni/kintsugi-sdk",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
+```
+
+### CLI (apps/cli/deno.json)
+
+```json
+{
+  "name": "@btripoloni/kintsugi-cli",
+  "tasks": {
+    "start": "deno run -A src/main.ts",
+    "dev": "deno run -A --watch src/main.ts"
+  },
+  "imports": {
+    "@btripoloni/kintsugi-sdk": "jsr:@btripoloni/kintsugi-sdk"
+  }
 }
 ```
 
 ---
 
-## 6. Project Structure
+## 8. Key Interfaces
 
-```
-kintsugi/
-├── src/
-│   ├── cli/                      # CLI application
-│   │   ├── main.ts               # Entry point
-│   │   ├── commands/             # CLI commands
-│   │   │   ├── init.ts
-│   │   │   ├── compile.ts
-│   │   │   └── run.ts
-│   │   └── tests/
-│   ├── interpreter/              # Interpreter (executes main.ts)
-│   │   └── src/
-│   │       ├── types/
-│   │       │   ├── derivation.ts  # Derivation, BuildOptions types
-│   │       │   ├── source.ts      # Source types
-│   │       │   └── environment.ts # Execution types
-│   │       └── lib/
-│   │           ├── modpack.ts    # Dependency resolution
-│   │           ├── hash.ts       # Hash generation
-│   │           └── environment.ts
-│   ├── compiler/                  # Compiler (builds from recipes)
-│   │   └── src/
-│   │       ├── sources/          # Source implementations
-│   │       │   ├── url.ts
-│   │       │   ├── local.ts
-│   │       │   ├── json.ts
-│   │       │   └── composition.ts
-│   │       ├── store/            # Store management
-│   │       │   └── store.ts
-│   │       └── types/
-│   │           ├── recipe.ts
-│   │           └── fetchers.ts
-│   └── core/                      # Shared core
-│       └── executor/
-│           └── executor.ts       # Execution with OverlayFS
-├── docs/                          # Documentation
-├── DEVELOPMENT.md                 # Development reference (this is YOUR reference)
-└── AGENTS.md                     # This file
-```
-
----
-
-## 7. Key Interfaces
-
-### 7.1 Derivation
+### 8.1 Derivation
 
 ```typescript
 interface Derivation {
@@ -222,7 +241,7 @@ interface Derivation {
 }
 ```
 
-### 7.2 Source Types
+### 8.2 Source Types
 
 | Type | Description | Key Parameters |
 |------|-------------|----------------|
@@ -232,7 +251,7 @@ interface Derivation {
 | `vase` | Import from Vase collection | `vase` |
 | `composition` | Compose multiple shards | `layers` |
 
-### 7.3 Recipe
+### 8.3 Recipe
 
 ```typescript
 interface Recipe {
@@ -244,7 +263,7 @@ interface Recipe {
 
 ---
 
-## 8. Testing Conventions
+## 9. Testing Conventions
 
 - Test files: `*_test.ts` in the same directory as the implementation
 - Test functions: `Deno.test("name", async (t) => { ... })`
@@ -273,23 +292,31 @@ Deno.test("FeatureName", async (t) => {
 
 ---
 
-## 9. Linting and Verification
+## 10. Linting and Verification
 
 **Always run these before submitting:**
 
 ```bash
-deno check ./src/
-deno fmt ./src/
-deno test ./src/
+# Check a specific package
+deno check ./apps/cli/
+deno check ./packages/sdk/
+
+# Format code
+deno fmt ./apps/cli/
+deno fmt ./packages/sdk/
+
+# Run tests
+deno test ./apps/cli/
+deno test ./packages/sdk/
 ```
 
 ---
 
-## 10. Module Guidelines
+## 11. Module Guidelines
 
 - Each module should have a focused responsibility
 - Use interfaces to define contracts
-- Export only what's necessary
+- Export only what's necessary from the SDK
 - Use factory functions like `createXxx()` or `newXxx()` for construction
 
 ### Store Usage Pattern
@@ -305,47 +332,37 @@ try {
 
 ### Paths Module
 
-Use `src/core/paths.ts` for handling Kintsugi root path. Never hardcode `.kintsugi` - always use the centralized function:
+Use `getKintsugiRoot()` from the SDK for handling Kintsugi root path:
 
 ```typescript
-import { getKintsugiRoot } from "../../core/paths.ts";
+import { getKintsugiRoot } from "@btripoloni/kintsugi-sdk";
 
 // Returns ~/.kintsugi by default, or custom path via KINTSUGI_ROOT env var or --root flag
 const root = getKintsugiRoot();
 ```
 
-The function resolves paths in this order:
-1. Custom root argument (if provided)
-2. `KINTSUGI_ROOT` environment variable
-3. `~/.kintsugi` (from HOME environment variable)
-
 ---
 
-## 11. Prerequisites
+## 12. Prerequisites
 
 - Deno 2.0 or higher
 - fuse-overlayfs (for modpack execution via OverlayFS)
 
 ---
 
-## 12. Your Reference: DEVELOPMENT.md
+## 13. Publishing the SDK
 
-The `DEVELOPMENT.md` file in the root directory contains comprehensive information about:
+The SDK is published to JSR:
 
-- Project architecture and components
-- CLI commands and usage
-- Source types and parameters
-- Interpretador and Compiler workflows
-- Execution (Run) with OverlayFS
-- Vases and Garbage Collection
-- Build and Rollback mechanisms
-- Technical details (hashing, etc.)
-
-**Always consult DEVELOPMENT.md when implementing features.**
+```bash
+# Publish SDK
+cd packages/sdk
+deno publish
+```
 
 ---
 
-## 13. Important Notes
+## 14. Important Notes
 
 1. The codebase is AI-generated - expect inconsistencies and be willing to refactor
 2. Always write tests first (TDD)
@@ -354,3 +371,4 @@ The `DEVELOPMENT.md` file in the root directory contains comprehensive informati
 5. Keep iterations small and simple
 6. Use Deno for all runtime operations
 7. Test files use Deno's built-in test framework
+8. Always import from `@btripoloni/kintsugi-sdk` in CLI code (not relative paths to SDK source)

@@ -26,7 +26,32 @@ Expressão (TS) -> Receita (JSON) -> Build (Store)
 
 ## 2. Estrutura de Diretórios
 
-### 2.1 Diretório do Kintsugi (`~/.kintsugi/`)
+### 2.1 Estrutura do Monorepo
+
+```
+kintsugi/
+├── apps/
+│   └── cli/                      # CLI do Kintsugi
+│       ├── src/
+│       │   ├── main.ts            # Entry point
+│       │   ├── commands/          # Comandos CLI
+│       │   └── tests/            # Testes do CLI
+│       └── deno.json             # Configuração do pacote
+├── packages/
+│   └── sdk/                       # SDK (biblioteca para usuários)
+│       ├── src/
+│       │   ├── types/             # Tipos TypeScript
+│       │   ├── lib/               # Biblioteca core
+│       │   ├── interpreter/       # Interpretador de main.ts
+│       │   ├── compiler/          # Compilador de receitas
+│       │   ├── executor/          # Execução com OverlayFS
+│       │   └── index.ts           # Exports do SDK
+│       └── deno.json              # Configuração do pacote
+├── deno.json                      # Configuração global
+└── DEVELOPMENT.md                 # Este arquivo
+```
+
+### 2.2 Diretório do Kintsugi (`~/.kintsugi/`)
 ```
 ~/.kintsugi/
 ├── modlists/      # Modlists do usuário (cada uma com main.ts, deno.json)

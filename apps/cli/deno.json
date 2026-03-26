@@ -1,17 +1,21 @@
 {
+  "name": "@btripoloni/kintsugi-cli",
+  "version": "0.1.0",
   "tasks": {
-    "test": "deno test ./",
-    "fmt": "deno fmt ./",
-    "lint": "deno lint ./",
-    "check": "deno check ./"
+    "dev": "deno run -A --watch src/main.ts",
+    "start": "deno run -A src/main.ts",
+    "build": "deno compile -A -o ../../dist/kintsugi src/main.ts"
   },
   "imports": {
+    "@btripoloni/kintsugi-sdk": "jsr:@btripoloni/kintsugi-sdk",
     "@std/assert": "jsr:@std/assert@1",
     "@std/path": "jsr:@std/path@1",
-    "@std/fs": "jsr:@std/fs@1",
-    "@std/crypto": "jsr:@std/crypto@1"
+    "@std/fs": "jsr:@std/fs@1"
   },
   "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "lib": ["deno.window"]
+  },
   "fmt": {
     "useTabs": false,
     "lineWidth": 100,
