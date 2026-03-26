@@ -39,16 +39,18 @@ kintsugi/
 │       ├── src/
 │       │   ├── main.ts           # Entry point
 │       │   ├── commands/        # CLI commands
+│       │   ├── interpreter/     # Interprets main.ts to recipes
+│       │   ├── executor/        # Execution with OverlayFS
+│       │   ├── sources/         # Source fetchers (url, local, etc)
+│       │   ├── store/           # Recipe and Vase management
+│       │   ├── lib/             # Core lib (hash, modpack)
 │       │   └── tests/           # CLI tests
 │       └── deno.json            # CLI configuration
 ├── packages/
 │   └── sdk/                      # SDK for users to create recipes
 │       ├── src/
 │       │   ├── types/            # TypeScript types (Derivation, Source, etc)
-│       │   ├── lib/              # Core library (hash, modpack)
-│       │   ├── interpreter/      # Interprets main.ts
-│       │   ├── compiler/         # Compiles recipes
-│       │   ├── executor/         # Execution with OverlayFS
+│       │   ├── lib/             # Helpers (compose, resolveTransitiveLayers)
 │       │   └── index.ts          # SDK exports
 │       └── deno.json            # SDK configuration
 ├── deno.json                    # Root configuration
@@ -120,10 +122,10 @@ deno task -A ./apps/cli start <command>
 
 ### SDK
 
-The SDK is published to JSR as `@btripoloni/kintsugi-sdk`. Users import it in their modlists:
+The SDK is published to JSR as `@btripoloni/kintsugi`. Users import it in their modlists:
 
 ```typescript
-import { Derivation, Source } from "@btripoloni/kintsugi-sdk";
+import { Derivation, Source } from "@btripoloni/kintsugi";
 ```
 
 ---
@@ -161,7 +163,7 @@ deno test -v ./
 | Type | Convention | Example |
 |------|------------|---------|
 | Files | kebab-case | `copy_test.ts`, `action.ts` |
-| Packages | kebab-case | `kintsugi-cli`, `kintsugi-sdk` |
+| Packages | kebab-case | `kintsugi-cli`, `kintsugi` |
 | Types/Interfaces | PascalCase | `Action`, `Step`, `Store` |
 | Functions/Methods | camelCase | `newStore`, `execute` |
 | Variables/Constants | camelCase | `modlistPath`, `isValid` |
@@ -185,7 +187,7 @@ import { join } from "jsr:@std/path";
 import { something } from "npm:some-package";
 
 // internal (SDK)
-import { Context } from "@btripoloni/kintsugi-sdk";
+import { Derivation, Source } from "@btripoloni/kintsugi";
 ```
 
 ### 6.5 Error Handling
@@ -202,7 +204,7 @@ import { Context } from "@btripoloni/kintsugi-sdk";
 
 ```json
 {
-  "name": "@btripoloni/kintsugi-sdk",
+  "name": "@btripoloni/kintsugi",
   "exports": {
     ".": "./src/index.ts"
   }
@@ -219,7 +221,7 @@ import { Context } from "@btripoloni/kintsugi-sdk";
     "dev": "deno run -A --watch src/main.ts"
   },
   "imports": {
-    "@btripoloni/kintsugi-sdk": "jsr:@btripoloni/kintsugi-sdk"
+    "@btripoloni/kintsugi": "jsr:@btripoloni/kintsugi"
   }
 }
 ```
@@ -332,10 +334,10 @@ try {
 
 ### Paths Module
 
-Use `getKintsugiRoot()` from the SDK for handling Kintsugi root path:
+Use `getKintsugiRoot()` from CLI for handling Kintsugi root path (internal to CLI):
 
 ```typescript
-import { getKintsugiRoot } from "@btripoloni/kintsugi-sdk";
+import { getKintsugiRoot } from "./paths.ts";
 
 // Returns ~/.kintsugi by default, or custom path via KINTSUGI_ROOT env var or --root flag
 const root = getKintsugiRoot();
@@ -371,4 +373,4 @@ deno publish
 5. Keep iterations small and simple
 6. Use Deno for all runtime operations
 7. Test files use Deno's built-in test framework
-8. Always import from `@btripoloni/kintsugi-sdk` in CLI code (not relative paths to SDK source)
+8. Always import from `@btripoloni/kintsugi` in CLI code (not relative paths to SDK source)

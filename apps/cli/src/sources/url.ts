@@ -1,7 +1,7 @@
 import { copy } from "jsr:@std/fs";
 import { join } from "jsr:@std/path";
-import type { FetchUrl } from "../types/fetchers.ts";
-import type { SourceContext } from "./local.ts";
+import type { FetchUrl } from "@btripoloni/kintsugi";
+import type { SourceContext } from "./types.ts";
 
 export async function executeUrl(
     fetcher: FetchUrl,
@@ -81,13 +81,11 @@ async function unpackFile(source: string, destDir: string): Promise<void> {
 }
 
 async function unpackZip(zipPath: string, _destDir: string): Promise<void> {
-    // Placeholder - would need zip library implementation
     await Deno.readFile(zipPath);
     throw new Error("ZIP unpacking not yet implemented");
 }
 
 async function unpackTar(tarPath: string, _destDir: string): Promise<void> {
-    // Placeholder - would need tar library implementation
     await Deno.readFile(tarPath);
     throw new Error(" TAR unpacking not yet implemented");
 }

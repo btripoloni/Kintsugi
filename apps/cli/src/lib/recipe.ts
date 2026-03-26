@@ -1,4 +1,4 @@
-import type { Fetcher } from "./fetchers.ts";
+import type { Fetcher } from "@btripoloni/kintsugi";
 
 export interface Recipe {
     out: string;

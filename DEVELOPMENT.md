@@ -13,9 +13,8 @@
 
 | Componente | Responsabilidade |
 |------------|-------------------|
-| **Interpretador** | Executa expressões TypeScript (`main.ts`) e gera receitas JSON |
-| **Compilador** | Lê receitas, baixa fontes, monta builds no Store |
-| **Executor** | Orquestra interpretador + compilador, fornece CLI (`run`, `build`, etc) |
+| **SDK** | Tipos e helpers para usuários criarem recipes em TypeScript |
+| **CLI** | Interpretador, compilador, executor - toda a lógica do Kintsugi |
 
 ### 1.3 Fluxo de Trabalho
 ```
@@ -28,6 +27,29 @@ Expressão (TS) -> Receita (JSON) -> Build (Store)
 
 ### 2.1 Estrutura do Monorepo
 
+```
+kintsugi/
+├── apps/
+│   └── cli/                       # CLI do Kintsugi
+│       ├── src/
+│       │   ├── main.ts            # Entry point
+│       │   ├── commands/          # Comandos CLI
+│       │   ├── interpreter/       # Interpretador de main.ts
+│       │   ├── executor/          # Execução com OverlayFS
+│       │   ├── sources/           # Implementação das Sources
+│       │   ├── store/             # Gerenciamento de recipes e vases
+│       │   ├── lib/               # Biblioteca core (hash, modpack)
+│       │   └── tests/             # Testes do CLI
+│       └── deno.json              # Configuração do pacote
+├── packages/
+│   └── sdk/                        # SDK (biblioteca para usuários)
+│       ├── src/
+│       │   ├── types/             # Tipos TypeScript (Derivation, Source)
+│       │   ├── lib/              # Helpers (compose, resolveTransitiveLayers)
+│       │   └── index.ts          # Exports do SDK
+│       └── deno.json              # Configuração do pacote
+├── deno.json                      # Configuração global
+└── DEVELOPMENT.md                 # Este arquivo
 ```
 kintsugi/
 ├── apps/
@@ -498,7 +520,7 @@ Script shell executado após aquisição da Source, dentro do sandbox de build.
 - **Linguagem**: TypeScript
 - **Sistema de Arquivos**: OverlayFS via fuse-overlayfs
 - **Execução Windows**: UMU-Launcher (Proton/Wine)
-- **Pacotes**: JSR (@btripoloni/kintsugi - temporariamente ignorado)
+- **Pacotes**: JSR (@btripoloni/kintsugi - SDK público)
 
 ---
 
@@ -514,40 +536,50 @@ Script shell executado após aquisição da Source, dentro do sandbox de build.
 
 ## 14. Arquitetura do Código Fonte
 
+### SDK (`packages/sdk/src/`)
+
 ```
-src/
-├── cli/                           # Interface de linha de comando
-│   ├── main.ts                    # Entry point do CLI
-│   ├── commands/
-│   │   ├── init.ts                # Comando: init
-│   │   ├── compile.ts             # Comando: compile
-│   │   └── run.ts                 # Comando: run
-│   └── tests/
-├── interpreter/                   # Interpretador de expressões TS
-│   └── src/
-│       ├── types/
-│       │   ├── derivation.ts      # Tipos Derivation, BuildOptions
-│       │   ├── source.ts          # Tipos de Source
-│       │   └── environment.ts     # Tipos de execução
-│       └── lib/
-│           ├── modpack.ts         # Resolução de dependências
-│           ├── hash.ts            # Geração de hash
-│           └── environment.ts     # Leitura de config de execução
-├── compiler/                      # Compilador (monta builds)
-│   └── src/
-│       ├── sources/               # Implementação das Sources
-│       │   ├── url.ts
-│       │   ├── local.ts
-│       │   ├── json.ts
-│       │   └── composition.ts
-│       ├── store/                 # Gerenciamento do Store
-│       │   └── store.ts
-│       └── types/
-│           ├── recipe.ts          # Tipo Recipe
-│           └── fetchers.ts        # Tipos de Fetcher
-└── core/                          # Core compartilhado
-    └── executor/
-        └── executor.ts            # Execução com OverlayFS
+packages/sdk/src/
+├── types/                        # Tipos TypeScript públicos
+│   ├── derivation.ts            # Derivation, Source, BuildOptions
+│   ├── fetchers.ts              # FetchUrl, FetchLocal, FetchVase, etc
+│   └── environment.ts           # EnvironmentConfig, RunManifest
+├── lib/
+│   ├── modpack.ts               # resolveTransitiveLayers, compose
+│   └── index.ts                 # Exports públicos
+```
+
+### CLI (`apps/cli/src/`)
+
+```
+apps/cli/src/
+├── main.ts                      # Entry point do CLI
+├── commands/                    # Comandos CLI
+│   ├── init.ts
+│   ├── build.ts
+│   ├── run.ts
+│   ├── compile.ts
+│   └── vase.ts
+├── interpreter/                 # Interpretador de main.ts
+│   └── interpreter.ts
+├── executor/                     # Execução com OverlayFS
+│   └── executor.ts
+├── sources/                      # Implementação das Sources
+│   ├── local.ts
+│   ├── url.ts
+│   ├── composition.ts
+│   ├── json.ts
+│   └── vase.ts
+├── store/                        # Gerenciamento do Store
+│   ├── store.ts                  # Recipes
+│   └── vase.ts                   # Vases
+├── lib/                          # Biblioteca interna
+│   ├── hash.ts                   # Geração de hash
+│   ├── modpack.ts                # Resolução de dependências
+│   ├── recipe.ts                 # Tipo Recipe
+│   └── manifest.ts               # Leitura de config de execução
+├── paths.ts                      # getKintsugiRoot
+└── tests/
 ```
 
 ---

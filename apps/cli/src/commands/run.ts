@@ -1,5 +1,7 @@
 import { join } from "jsr:@std/path";
-import { getKintsugiRoot, readEnvironmentConfig, readRunManifest, executeWithOverlay } from "@btripoloni/kintsugi-sdk";
+import { getKintsugiRoot } from "../paths.ts";
+import { readEnvironmentConfig, readRunManifest } from "../lib/manifest.ts";
+import { executeWithOverlay } from "../executor/executor.ts";
 
 export interface RunArgs {
     modlist: string;

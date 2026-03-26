@@ -1,4 +1,4 @@
-import type { BuildOptions, Derivation, Source } from "../types/derivation.ts";
+import type { BuildOptions, Derivation, Source } from "@btripoloni/kintsugi";
 import { hashDerivation } from "./hash.ts";
 
 export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {

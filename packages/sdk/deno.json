@@ -1,5 +1,5 @@
 {
-  "name": "@btripoloni/kintsugi-sdk",
+  "name": "@btripoloni/kintsugi",
   "version": "0.1.0",
   "exports": {
     ".": "./src/index.ts"

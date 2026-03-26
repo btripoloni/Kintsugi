@@ -1,5 +1,3 @@
-import { join } from "jsr:@std/path@1";
-
 export function getKintsugiRoot(customRoot?: string): string {
     if (customRoot) {
         return customRoot;
@@ -10,10 +8,12 @@ export function getKintsugiRoot(customRoot?: string): string {
         return envRoot;
     }
 
-    const home = Deno.env.get("HOME");
+    const home = Deno.env.get("HOME") || Deno.env.get("USERPROFILE");
     if (!home) {
-        throw new Error("HOME environment variable is not set. Set KINTSUGI_ROOT or HOME.");
+        throw new Error("Could not determine home directory");
     }
 
     return join(home, ".kintsugi");
 }
+
+import { join } from "jsr:@std/path";

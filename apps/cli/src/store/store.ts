@@ -1,6 +1,5 @@
 import { join } from "jsr:@std/path";
-import { ensureDir } from "jsr:@std/fs";
-import type { Recipe } from "../types/recipe.ts";
+import type { Recipe } from "../lib/recipe.ts";
 
 export function getRecipePath(storeDir: string, out: string): string {
     return join(storeDir, "recipes", `${out}.json`);
@@ -9,8 +8,8 @@ export function getRecipePath(storeDir: string, out: string): string {
 export async function recipeExists(storeDir: string, out: string): Promise<boolean> {
     const path = getRecipePath(storeDir, out);
     try {
-        const info = await Deno.stat(path);
-        return info.isFile;
+        await Deno.stat(path);
+        return true;
     } catch {
         return false;
     }
@@ -19,9 +18,8 @@ export async function recipeExists(storeDir: string, out: string): Promise<boole
 export async function readRecipe(storeDir: string, out: string): Promise<Recipe | null> {
     const path = getRecipePath(storeDir, out);
     try {
-        const content = await Deno.readFile(path);
-        const text = new TextDecoder().decode(content);
-        return JSON.parse(text) as Recipe;
+        const content = await Deno.readTextFile(path);
+        return JSON.parse(content) as Recipe;
     } catch {
         return null;
     }
@@ -30,20 +28,27 @@ export async function readRecipe(storeDir: string, out: string): Promise<Recipe 
 export async function saveRecipe(storeDir: string, out: string, recipe: Recipe): Promise<void> {
     const path = getRecipePath(storeDir, out);
     const dir = join(storeDir, "recipes");
-    await ensureDir(dir);
+    await Deno.mkdir(dir, { recursive: true });
     await Deno.writeTextFile(path, JSON.stringify(recipe, null, 2));
 }
 
 export async function readRecipeByName(
     storeDir: string,
-    recipeName: string,
+    name: string,
 ): Promise<Recipe | null> {
-    const path = join(storeDir, "recipes", `${recipeName}.json`);
+    const recipesDir = join(storeDir, "recipes");
     try {
-        const content = await Deno.readFile(path);
-        const text = new TextDecoder().decode(content);
-        return JSON.parse(text) as Recipe;
+        for await (const entry of Deno.readDir(recipesDir)) {
+            if (!entry.isFile || !entry.name.endsWith(".json")) continue;
+            const path = join(recipesDir, entry.name);
+            const content = await Deno.readTextFile(path);
+            const recipe = JSON.parse(content) as Recipe;
+            if (recipe.out.startsWith(name) || recipe.out.includes(name)) {
+                return recipe;
+            }
+        }
     } catch {
-        return null;
+        // Ignore errors
     }
+    return null;
 }

@@ -1,10 +1,9 @@
 import { join } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
-import type { Derivation } from "./types/derivation.ts";
-import { resolveTransitiveLayers } from "./lib/modpack.ts";
-import { hashDerivation } from "./lib/hash.ts";
-import { saveRecipe } from "../../compiler/src/store/store.ts";
-import type { Recipe } from "../../compiler/src/types/recipe.ts";
+import type { Derivation } from "@btripoloni/kintsugi";
+import { resolveTransitiveLayers } from "../lib/modpack.ts";
+import { hashDerivation } from "../lib/hash.ts";
+import type { Recipe } from "../lib/recipe.ts";
 
 export interface InterpretationResult {
     derivations: Derivation[];
@@ -131,3 +130,5 @@ export async function interpretModlist(
 
     return interpretDerivation({ derivation, recipesDir });
 }
+
+import { saveRecipe } from "../store/store.ts";

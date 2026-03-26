@@ -1,7 +1,9 @@
 import { assertEquals, assertExists } from "jsr:@std/assert";
 import { join } from "jsr:@std/path";
-import { readRecipeByName, saveRecipe, executeComposition } from "@btripoloni/kintsugi-sdk";
-import type { Recipe, Composition } from "@btripoloni/kintsugi-sdk";
+import { readRecipeByName, saveRecipe } from "../store/store.ts";
+import { executeComposition } from "../sources/index.ts";
+import type { Composition } from "@btripoloni/kintsugi";
+import type { Recipe } from "../lib/recipe.ts";
 
 Deno.test("integration: composition of multiple local sources", async (t) => {
     const tmpDir = await Deno.makeTempDir();

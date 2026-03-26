@@ -1,7 +1,10 @@
 import { join } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
-import { getKintsugiRoot, interpretModlist, recipeExists, saveRecipe, executeUrl, executeLocal, executeComposition, executeVase } from "@btripoloni/kintsugi-sdk";
-import type { Fetcher } from "@btripoloni/kintsugi-sdk";
+import { interpretModlist } from "../interpreter/interpreter.ts";
+import { recipeExists, saveRecipe } from "../store/store.ts";
+import { getKintsugiRoot } from "../paths.ts";
+import { executeUrl, executeLocal, executeComposition, executeVase } from "../sources/index.ts";
+import type { Fetcher } from "@btripoloni/kintsugi";
 
 export interface BuildArgs {
     modlistPath: string;

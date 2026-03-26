@@ -1,4 +1,5 @@
-import { getKintsugiRoot, addVase, getVaseMetadata, listVases, removeVase } from "@btripoloni/kintsugi-sdk";
+import { getKintsugiRoot } from "../paths.ts";
+import { addVase, getVaseMetadata, listVases, removeVase } from "../store/vase.ts";
 
 export interface VaseArgs {
     subcommand: string;
@@ -89,8 +90,8 @@ Examples:
                 throw new Error("name and path are required for 'add'");
             }
             console.log(`Adding vase '${args.name}' from '${args.sourcePath}'...`);
-            const vaseName = await addVase(root, args.name, args.sourcePath);
-            console.log(`Vase '${vaseName}' created successfully`);
+            await addVase(root, args.name, args.sourcePath);
+            console.log(`Vase '${args.name}' created successfully`);
             break;
         }
 
@@ -128,8 +129,8 @@ Examples:
                 throw new Error(`Vase '${args.name}' not found`);
             }
             console.log(`Vase: ${metadata.name}`);
-            console.log(`Created: ${metadata.createdAt}`);
-            console.log(`Source: ${metadata.sourcePath}`);
+            console.log(`Created: ${metadata.addedAt}`);
+            console.log(`Source: ${metadata.path}`);
             break;
         }
 

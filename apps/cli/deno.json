@@ -7,7 +7,7 @@
     "build": "deno compile -A -o ../../dist/kintsugi src/main.ts"
   },
   "imports": {
-    "@btripoloni/kintsugi-sdk": "jsr:@btripoloni/kintsugi-sdk",
+    "@btripoloni/kintsugi": "jsr:@btripoloni/kintsugi",
     "@std/assert": "jsr:@std/assert@1",
     "@std/path": "jsr:@std/path@1",
     "@std/fs": "jsr:@std/fs@1"

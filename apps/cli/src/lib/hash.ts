@@ -1,7 +1,7 @@
 import { crypto } from "jsr:@std/crypto";
 import { encodeHex } from "jsr:@std/encoding/hex";
 import { join } from "jsr:@std/path";
-import type { Derivation } from "../types/derivation.ts";
+import type { Derivation } from "@btripoloni/kintsugi";
 
 function sortKeysRecursively(obj: any): any {
     if (obj === null || obj === undefined) {
