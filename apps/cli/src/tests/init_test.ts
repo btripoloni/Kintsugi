@@ -48,7 +48,9 @@ Deno.test("initCommand - creates folder with name and files inside", async () =>
         const folderExists = await Deno.stat(folderPath).then(() => true).catch(() => false);
         const denoJsonExists = await Deno.stat(denoJsonPath).then(() => true).catch(() => false);
         const mainTsExists = await Deno.stat(mainTsPath).then(() => true).catch(() => false);
-        const modlistJsonExists = await Deno.stat(modlistJsonPath).then(() => true).catch(() => false);
+        const modlistJsonExists = await Deno.stat(modlistJsonPath).then(() => true).catch(() =>
+            false
+        );
 
         assertEquals(folderExists, true);
         assertEquals(denoJsonExists, true);

@@ -1,13 +1,20 @@
-import type { FetchUrl, FetchLocal, WriteJson, FetchVase, Composition, CompositionLayer } from "./fetchers.ts";
+import type {
+    Composition,
+    CompositionLayer,
+    FetchLocal,
+    FetchUrl,
+    FetchVase,
+    WriteJson,
+} from "./fetchers.ts";
 
 export { Composition, CompositionLayer };
 
-export interface Derivation {
+export interface Shard {
     name: string;
     version: string;
     src: Source;
     dependencies?: string[];
-    deps?: Derivation[];
+    deps?: Shard[];
     permissions?: string[];
     postbuild?: string;
     out?: string;
@@ -17,7 +24,7 @@ export type Source = FetchUrl | FetchLocal | WriteJson | Composition | FetchVase
 
 export interface BuildOptions {
     name: string;
-    layers: Derivation[];
+    layers: Shard[];
     entrypoint?: string;
     args?: string[];
     env?: Record<string, string>;

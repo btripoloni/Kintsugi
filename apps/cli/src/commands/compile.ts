@@ -1,13 +1,7 @@
 import { readRecipeByName } from "../store/store.ts";
 import { getKintsugiRoot } from "../paths.ts";
-import { executeLocal, executeUrl, executeComposition, executeVase } from "../sources/index.ts";
-import type {
-    Composition,
-    Fetcher,
-    FetchLocal,
-    FetchUrl,
-    FetchVase,
-} from "@btripoloni/kintsugi";
+import { executeComposition, executeLocal, executeUrl, executeVase } from "../sources/index.ts";
+import type { Composition, Fetcher, FetchLocal, FetchUrl, FetchVase } from "@btripoloni/kintsugi";
 
 export interface CompileArgs {
     recipeName: string;

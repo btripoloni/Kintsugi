@@ -3,7 +3,7 @@ import { ensureDir } from "jsr:@std/fs";
 import { interpretModlist } from "../interpreter/interpreter.ts";
 import { recipeExists, saveRecipe } from "../store/store.ts";
 import { getKintsugiRoot } from "../paths.ts";
-import { executeUrl, executeLocal, executeComposition, executeVase } from "../sources/index.ts";
+import { executeComposition, executeLocal, executeUrl, executeVase } from "../sources/index.ts";
 import type { Fetcher } from "@btripoloni/kintsugi";
 
 export interface BuildArgs {
@@ -165,23 +165,25 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
     console.log(`Building modlist '${modlistName}'...`);
 
     const result = await interpretModlist(modlistPath, storeDir);
-    const derivations = result.derivations;
+    const shards = result.shards;
     const rootOut = result.rootOut;
 
-    console.log(`Interpreted: ${rootOut} (${derivations.length} derivations)`);
+    console.log(`Interpreted: ${rootOut} (${shards.length} shards)`);
 
-    for (const drv of derivations) {
+    for (const drv of shards) {
         const src = drv.src as Fetcher;
         if (src.type !== "composition") {
             await buildShard(drv.out!, src, modlistPath, storeDir);
         }
     }
 
-    const rootDrv = derivations.find((d) => d.out === rootOut);
+    const rootDrv = shards.find((d) => d.out === rootOut);
     const rootSrc = rootDrv?.src as Fetcher;
 
     if (rootSrc?.type === "composition") {
-        const layerStrings = rootSrc.layers.filter((l): l is string => typeof l === "string");
+        const layerStrings = rootSrc.layers.filter((l: string | { out?: string }) =>
+            typeof l === "string"
+        ) as string[];
         await buildComposition(rootOut, layerStrings, storeDir);
     } else {
         await buildComposition(rootOut, [rootOut], storeDir);
@@ -189,7 +191,7 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
 
     const targetModlistDir = join(args.root, "modlists", modlistName);
     await ensureDir(targetModlistDir);
-    
+
     const activePath = join(targetModlistDir, "active");
     const compositionPath = join(storeDir, "compositions", rootOut);
 

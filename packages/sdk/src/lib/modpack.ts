@@ -1,13 +1,13 @@
-import type { BuildOptions, Derivation, Source } from "../types/derivation.ts";
+import type { BuildOptions, Shard, Source } from "../types/shard.ts";
 import type { Fetcher } from "../types/fetchers.ts";
-import { hashDerivation } from "./hash.ts";
+import { hashShard } from "./hash.ts";
 
-export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
-    const sorted: Derivation[] = [];
+export function resolveTransitiveLayers(roots: Shard[]): Shard[] {
+    const sorted: Shard[] = [];
     const visited = new Set<string>();
     const processing = new Set<string>();
 
-    function visit(drv: Derivation) {
+    function visit(drv: Shard) {
         const out = drv.out;
         if (!out || visited.has(out)) return;
         if (processing.has(out)) {
@@ -38,7 +38,7 @@ export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
 
 export async function compose(
     options: BuildOptions,
-): Promise<Derivation> {
+): Promise<Shard> {
     const {
         name,
         layers,
@@ -57,7 +57,7 @@ export async function compose(
         layers: layerHashes,
     };
 
-    const drv = await hashDerivation({
+    const drv = await hashShard({
         name,
         version: "generated",
         src,

@@ -1,7 +1,7 @@
 import { crypto } from "jsr:@std/crypto";
 import { encodeHex } from "jsr:@std/encoding/hex";
 import { join } from "jsr:@std/path";
-import type { Derivation } from "@btripoloni/kintsugi";
+import type { Shard } from "@btripoloni/kintsugi";
 
 function sortKeysRecursively(obj: any): any {
     if (obj === null || obj === undefined) {
@@ -26,11 +26,11 @@ function sortKeysRecursively(obj: any): any {
     return sorted;
 }
 
-export async function hashDerivation(
-    derivation: Derivation,
+export async function hashShard(
+    shard: Shard,
     recipesDir?: string,
-): Promise<Derivation> {
-    const { name, version, src, dependencies, permissions, postbuild, ...rest } = derivation;
+): Promise<Shard> {
+    const { name, version, src, dependencies, permissions, postbuild, ...rest } = shard;
 
     const toHash: any = {
         name,

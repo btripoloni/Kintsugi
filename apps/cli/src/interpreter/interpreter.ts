@@ -1,59 +1,59 @@
 import { join } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
-import type { Derivation } from "@btripoloni/kintsugi";
+import type { Shard } from "@btripoloni/kintsugi";
 import { resolveTransitiveLayers } from "../lib/modpack.ts";
-import { hashDerivation } from "../lib/hash.ts";
+import { hashShard } from "../lib/hash.ts";
 import type { Recipe } from "../lib/recipe.ts";
 
 export interface InterpretationResult {
-    derivations: Derivation[];
+    shards: Shard[];
     rootOut: string;
 }
 
-export interface InterpretDerivationOptions {
-    derivation: Derivation;
+export interface InterpretShardOptions {
+    shard: Shard;
     recipesDir?: string;
 }
 
-export async function interpretDerivation(
-    options: InterpretDerivationOptions,
+export async function interpretShard(
+    options: InterpretShardOptions,
 ): Promise<InterpretationResult> {
-    const { derivation, recipesDir } = options;
+    const { shard, recipesDir } = options;
 
-    if (!derivation.name || !derivation.version || !derivation.src) {
-        throw new Error("Invalid derivation: name, version, and src are required");
+    if (!shard.name || !shard.version || !shard.src) {
+        throw new Error("Invalid shard: name, version, and src are required");
     }
 
-    let derivations: Derivation[];
+    let shards: Shard[];
 
-    const src = derivation.src;
+    const src = shard.src;
     if (src.type === "composition") {
         const layerObjects = src.layers.filter(
             (layer): layer is { name: string; version: string; src: any } =>
-                typeof layer !== "string" && "name" in layer && "version" in layer
+                typeof layer !== "string" && "name" in layer && "version" in layer,
         );
 
         if (layerObjects.length > 0) {
-            derivations = resolveTransitiveLayers([derivation, ...layerObjects as any]);
+            shards = resolveTransitiveLayers([shard, ...layerObjects as any]);
         } else {
-            derivations = [derivation];
+            shards = [shard];
         }
     } else {
-        derivations = [derivation];
+        shards = [shard];
     }
 
-    const hashedDerivations: Derivation[] = [];
-    for (const drv of derivations) {
-        const hashed = await hashDerivation(drv, recipesDir);
-        hashedDerivations.push(hashed);
+    const hashedShards: Shard[] = [];
+    for (const drv of shards) {
+        const hashed = await hashShard(drv, recipesDir);
+        hashedShards.push(hashed);
     }
 
     const hashedMap = new Map(
-        hashedDerivations.map((d) => [d.name + "-" + d.version, d.out])
+        hashedShards.map((d) => [d.name + "-" + d.version, d.out]),
     );
 
-    const finalDerivations: Derivation[] = [];
-    for (const drv of hashedDerivations) {
+    const finalShards: Shard[] = [];
+    for (const drv of hashedShards) {
         const deps = drv.deps?.map((d) => {
             const key = d.name + "-" + d.version;
             return hashedMap.get(key) || d.out || key;
@@ -63,34 +63,32 @@ export async function interpretDerivation(
         if (finalSrc.type === "composition") {
             finalSrc = {
                 ...finalSrc,
-                layers: finalSrc.layers.map((l) =>
-                    typeof l === "string" ? l : (l as any).out || ""
-                ).filter((l): l is string => !!l),
+                layers: finalSrc.layers.map((l) => typeof l === "string" ? l : (l as any).out || "")
+                    .filter((l): l is string => !!l),
             };
         }
 
-        const finalDrv: Derivation = {
+        const finalDrv: Shard = {
             ...drv,
             src: finalSrc,
             dependencies: deps,
             deps: undefined,
         };
 
-        finalDerivations.push(finalDrv);
+        finalShards.push(finalDrv);
     }
 
     if (recipesDir) {
         const recipesDirPath = join(recipesDir, "recipes");
         await ensureDir(recipesDirPath);
 
-        for (const drv of finalDerivations) {
+        for (const drv of finalShards) {
             let srcForRecipe = drv.src;
             if (srcForRecipe.type === "composition") {
                 srcForRecipe = {
                     ...srcForRecipe,
-                    layers: srcForRecipe.layers.map((l) =>
-                        typeof l === "string" ? l : l.out || ""
-                    ).filter((l): l is string => !!l),
+                    layers: srcForRecipe.layers.map((l) => typeof l === "string" ? l : l.out || "")
+                        .filter((l): l is string => !!l),
                 };
             }
 
@@ -104,12 +102,12 @@ export async function interpretDerivation(
         }
     }
 
-    const rootOut = finalDerivations.find(
-        (d) => d.name === derivation.name && d.version === derivation.version
-    )?.out || finalDerivations[finalDerivations.length - 1].out!;
+    const rootOut = finalShards.find(
+        (d) => d.name === shard.name && d.version === shard.version,
+    )?.out || finalShards[finalShards.length - 1].out!;
 
     return {
-        derivations: finalDerivations,
+        shards: finalShards,
         rootOut,
     };
 }
@@ -122,13 +120,13 @@ export async function interpretModlist(
 
     const mainModule = await import(`file://${mainTsPath}`);
 
-    const derivation = mainModule.default as Derivation;
+    const shard = mainModule.default as Shard;
 
-    if (!derivation.name || !derivation.version || !derivation.src) {
-        throw new Error("Invalid derivation: name, version, and src are required");
+    if (!shard.name || !shard.version || !shard.src) {
+        throw new Error("Invalid shard: name, version, and src are required");
     }
 
-    return interpretDerivation({ derivation, recipesDir });
+    return interpretShard({ shard, recipesDir });
 }
 
 import { saveRecipe } from "../store/store.ts";

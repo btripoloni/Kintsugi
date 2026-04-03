@@ -1,6 +1,6 @@
-import type { Source } from "../types/derivation.ts";
+import type { Source } from "../types/shard.ts";
 
-export async function hashDerivation(data: {
+export async function hashShard(data: {
     name: string;
     version: string;
     src: Source;
@@ -8,7 +8,7 @@ export async function hashDerivation(data: {
     deps?: unknown[];
     permissions?: string[];
     postbuild?: string;
-}): Promise<Derivation> {
+}): Promise<Shard> {
     const payload = JSON.stringify({
         name: data.name,
         version: data.version,
@@ -31,18 +31,18 @@ export async function hashDerivation(data: {
         version: data.version,
         src: data.src,
         dependencies: data.dependencies,
-        deps: data.deps as Derivation["deps"],
+        deps: data.deps as Shard["deps"],
         permissions: data.permissions,
         postbuild: data.postbuild,
     };
 }
 
-export interface Derivation {
+export interface Shard {
     name: string;
     version: string;
     src: Source;
     dependencies?: string[];
-    deps?: Derivation[];
+    deps?: Shard[];
     permissions?: string[];
     postbuild?: string;
     out: string;

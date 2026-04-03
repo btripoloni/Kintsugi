@@ -11,7 +11,10 @@ export async function readEnvironmentConfig(modlistPath: string): Promise<Enviro
     }
 }
 
-export async function readRunManifest(compositionPath: string, profile: string): Promise<RunManifest> {
+export async function readRunManifest(
+    compositionPath: string,
+    profile: string,
+): Promise<RunManifest> {
     const manifestPath = join(compositionPath, "kintsugi", "exec", `${profile}.run.json`);
     try {
         const content = await Deno.readTextFile(manifestPath);
