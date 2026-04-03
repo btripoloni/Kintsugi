@@ -1,11 +1,11 @@
-import type { Source } from "../types/shard.ts";
+import type { Shard, Source } from "../types/shard.ts";
 
 export async function hashShard(data: {
     name: string;
     version: string;
     src: Source;
-    dependencies?: string[];
-    deps?: unknown[];
+    dependencies?: Shard[];
+    _dependencyHashes?: string[];
     permissions?: string[];
     postbuild?: string;
 }): Promise<Shard> {
@@ -13,7 +13,7 @@ export async function hashShard(data: {
         name: data.name,
         version: data.version,
         src: data.src,
-        dependencies: data.dependencies,
+        _dependencyHashes: data._dependencyHashes,
         permissions: data.permissions,
         postbuild: data.postbuild,
     });
@@ -31,19 +31,8 @@ export async function hashShard(data: {
         version: data.version,
         src: data.src,
         dependencies: data.dependencies,
-        deps: data.deps as Shard["deps"],
+        _dependencyHashes: data._dependencyHashes,
         permissions: data.permissions,
         postbuild: data.postbuild,
     };
-}
-
-export interface Shard {
-    name: string;
-    version: string;
-    src: Source;
-    dependencies?: string[];
-    deps?: Shard[];
-    permissions?: string[];
-    postbuild?: string;
-    out: string;
 }

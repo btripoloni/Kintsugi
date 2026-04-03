@@ -30,19 +30,20 @@ export async function hashShard(
     shard: Shard,
     recipesDir?: string,
 ): Promise<Shard> {
-    const { name, version, src, dependencies, permissions, postbuild, ...rest } = shard;
+    const { name, version, src, dependencies, _dependencyHashes, permissions, postbuild, ...rest } =
+        shard;
 
     const toHash: any = {
         name,
         version,
         src,
-        dependencies,
+        _dependencyHashes,
         permissions,
         postbuild,
         ...rest,
     };
 
-    delete toHash.deps;
+    delete toHash.dependencies;
     delete toHash.out;
 
     const sortedToHash = sortKeysRecursively(toHash);
@@ -60,7 +61,7 @@ export async function hashShard(
         const fullRecipe: any = {
             out: outName,
             src,
-            dependencies,
+            _dependencyHashes,
             permissions,
             postbuild,
         };
@@ -79,6 +80,7 @@ export async function hashShard(
         version,
         src,
         dependencies,
+        _dependencyHashes,
         permissions,
         postbuild,
         out: outName,

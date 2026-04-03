@@ -17,8 +17,8 @@ export function resolveTransitiveLayers(roots: Shard[]): Shard[] {
 
         processing.add(out);
 
-        if (drv.deps) {
-            for (const dep of drv.deps) {
+        if (drv.dependencies) {
+            for (const dep of drv.dependencies) {
                 visit(dep);
             }
         }
@@ -60,8 +60,8 @@ export async function compose(
         name,
         version: "generated",
         src,
-        dependencies: layerHashes,
-        deps: resolvedLayers,
+        dependencies: resolvedLayers,
+        _dependencyHashes: layerHashes,
         permissions,
         postbuild,
     });

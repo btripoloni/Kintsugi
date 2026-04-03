@@ -13,8 +13,8 @@ export interface Shard {
     name: string;
     version: string;
     src: Source;
-    dependencies?: string[];
-    deps?: Shard[];
+    dependencies?: Shard[];
+    _dependencyHashes?: string[];
     permissions?: string[];
     postbuild?: string;
     out?: string;

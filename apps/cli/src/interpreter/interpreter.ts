@@ -54,7 +54,7 @@ export async function interpretShard(
 
     const finalShards: Shard[] = [];
     for (const drv of hashedShards) {
-        const deps = drv.deps?.map((d) => {
+        const dependencyHashes = drv.dependencies?.map((d) => {
             const key = d.name + "-" + d.version;
             return hashedMap.get(key) || d.out || key;
         }) || [];
@@ -71,8 +71,7 @@ export async function interpretShard(
         const finalDrv: Shard = {
             ...drv,
             src: finalSrc,
-            dependencies: deps,
-            deps: undefined,
+            _dependencyHashes: dependencyHashes,
         };
 
         finalShards.push(finalDrv);
@@ -95,7 +94,7 @@ export async function interpretShard(
             const recipe: Recipe = {
                 out: drv.out!,
                 src: srcForRecipe as any,
-                dependencies: drv.dependencies,
+                _dependencyHashes: drv._dependencyHashes,
             };
 
             await saveRecipe(recipesDirPath, drv.out!, recipe);
