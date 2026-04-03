@@ -44,7 +44,7 @@ kintsugi/
 ├── packages/
 │   └── sdk/                        # SDK (biblioteca para usuários)
 │       ├── src/
-│       │   ├── types/             # Tipos TypeScript (Derivation, Source)
+│       │   ├── types/             # Tipos TypeScript (Shard, Source)
 │       │   ├── lib/              # Helpers (compose, resolveTransitiveLayers)
 │       │   └── index.ts          # Exports do SDK
 │       └── deno.json              # Configuração do pacote
@@ -151,7 +151,7 @@ kintsugi gc              # Executa cleanup
 O `main.ts` deve exportar um objeto que representa a modlist. A estrutura é:
 
 ```typescript
-interface Derivation {
+interface Shard {
   name: string;           // Nome descritivo (ex: "skyrim-se")
   version: string;        // Versão (ex: "1.6.1170")
   out: string;           // Output hash format: "[hash]-[name]-[version]"
@@ -279,7 +279,7 @@ export default {
       "0841c53c2c1377ecdcd5e68ef52c7ac4-skse-2.2.6",
     ]
   }
-} satisfies Derivation;
+} satisfies Shard;
 ```
 
 ---
@@ -287,10 +287,10 @@ export default {
 ## 5. O Interpretador
 
 ### 5.1 Responsabilidade
-Executar o `main.ts` e transformar o resultado em arquivos de receita JSON individuais para cada derivation.
+Executar o `main.ts` e transformar o resultado em arquivos de receita JSON individuais para cada shard.
 
 ### 5.2 Entrada do Interpretador
-O interpretador recebe um objeto `Derivation` que pode conter composition com layers como objetos Derivation (não só strings):
+O interpretador recebe um objeto `Shard` que pode conter composition com layers como objetos Shard (não só strings):
 
 ```typescript
 interface CompositionLayer {
@@ -298,24 +298,24 @@ interface CompositionLayer {
     version: string;
     src: Source;
     dependencies?: string[];
-    deps?: Derivation[];
+    deps?: Shard[];
 }
 
 interface Composition {
     type: "composition";
-    layers: (string | Derivation)[];  // Pode ser Derivation ou string (hash)
+    layers: (string | Shard)[];  // Pode ser Shard ou string (hash)
 }
 ```
 
 ### 5.3 Fluxo
-1. Recebe objeto Derivation do main.ts
-2. Se a source for composition com layers como objetos Derivation:
+1. Recebe objeto Shard do main.ts
+2. Se a source for composition com layers como objetos Shard:
    - Resolve dependências transicionalmente (ordenação topológica)
-   - Para cada derivation (incluindo as dos layers), gera hash SHA-256
+   - Para cada shard (incluindo as dos layers), gera hash SHA-256
    - Salva arquivo individual por receita em `~/.kintsugi/store/recipes/[hash]-[nome]-[versão].json`
-   - Substitui os objetos Derivation nos layers por suas strings de hash
+   - Substitui os objetos Shard nos layers por suas strings de hash
 3. Se a source for outro tipo:
-   - Gera hash da derivation
+   - Gera hash do shard
    - Salva receita individual
 4. Retorna lista de todos os `out` (hashes) das receitas geradas
 
@@ -371,7 +371,7 @@ store/
 
 O formato é sempre: `[sha256-32chars]-[nome]-[versão]`
 - Hash truncado para 32 caracteres para legibilidade
-- Nome e versão definidos na Derivation
+- Nome e versão definidos no Shard
 
 ---
 
@@ -506,7 +506,7 @@ Muda o link simbólico `active` para apontar para build anterior.
 ### 11.1 Hash Generation
 - Algoritmo: SHA-256
 - Comprimento: 32 caracteres (truncado)
-- Baseado no objeto Derivation serializado
+- Baseado no objeto Shard serializado
 - Chaves ordenadas recursivamente antes de serializar
 
 ### 11.2 Postbuild
@@ -541,7 +541,7 @@ Script shell executado após aquisição da Source, dentro do sandbox de build.
 ```
 packages/sdk/src/
 ├── types/                        # Tipos TypeScript públicos
-│   ├── derivation.ts            # Derivation, Source, BuildOptions
+│   ├── shard.ts               # Shard, Source, BuildOptions
 │   ├── fetchers.ts              # FetchUrl, FetchLocal, FetchVase, etc
 │   └── environment.ts           # EnvironmentConfig, RunManifest
 ├── lib/

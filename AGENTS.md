@@ -87,7 +87,7 @@ kintsugi/
 ├── packages/
 │   └── sdk/                      # SDK for users to create recipes
 │       ├── src/
-│       │   ├── types/            # TypeScript types (Derivation, Source, etc)
+│       │   ├── types/            # TypeScript types (Shard, Source, etc)
 │       │   ├── lib/             # Helpers (compose, resolveTransitiveLayers, hash)
 │       │   └── index.ts          # SDK exports
 │       └── deno.json            # SDK configuration
@@ -163,7 +163,7 @@ deno task -A ./apps/cli start <command>
 The SDK is published to JSR as `@btripoloni/kintsugi`. Users import it in their modlists:
 
 ```typescript
-import { Derivation, Source } from "@btripoloni/kintsugi";
+import { Shard, Source } from "@btripoloni/kintsugi";
 ```
 
 ---
@@ -225,7 +225,7 @@ import { join } from "jsr:@std/path";
 import { something } from "npm:some-package";
 
 // internal (SDK)
-import { Derivation, Source } from "@btripoloni/kintsugi";
+import { Shard, Source } from "@btripoloni/kintsugi";
 ```
 
 ### 6.5 Error Handling
@@ -268,10 +268,10 @@ import { Derivation, Source } from "@btripoloni/kintsugi";
 
 ## 9. Key Interfaces
 
-### 8.1 Derivation
+### 8.1 Shard
 
 ```typescript
-interface Derivation {
+interface Shard {
   name: string;           // Descriptive name (e.g., "skyrim-se")
   version: string;        // Version (e.g., "1.6.1170")
   out: string;           // Output: "[hash]-[name]-[version]"
