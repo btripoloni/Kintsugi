@@ -48,7 +48,23 @@ export async function compose(
         postbuild,
     } = options;
 
-    const resolvedLayers = resolveTransitiveLayers(layers);
+    // Ensure all layers have an `out` field by hashing them if needed
+    const hashedLayers = await Promise.all(
+        layers.map(async (layer) => {
+            if (layer.out) return layer;
+            return await hashShard({
+                name: layer.name,
+                version: layer.version,
+                src: layer.src,
+                dependencies: layer.dependencies,
+                _dependencyHashes: layer._dependencyHashes,
+                permissions: layer.permissions,
+                postbuild: layer.postbuild,
+            });
+        }),
+    );
+
+    const resolvedLayers = resolveTransitiveLayers(hashedLayers);
     const layerHashes = resolvedLayers.map((l) => l.out).filter((out): out is string => !!out);
 
     const src: Source = {
