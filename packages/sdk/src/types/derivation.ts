@@ -1,20 +1,6 @@
-import type { FetchUrl, FetchLocal, WriteJson, FetchVase } from "./fetchers.ts";
+import type { FetchUrl, FetchLocal, WriteJson, FetchVase, Composition, CompositionLayer } from "./fetchers.ts";
 
-export interface CompositionLayer {
-    name: string;
-    version: string;
-    src: Source;
-    dependencies?: string[];
-    deps?: Derivation[];
-    permissions?: string[];
-    postbuild?: string;
-    out?: string;
-}
-
-export interface Composition {
-    type: "composition";
-    layers: (string | CompositionLayer)[];
-}
+export { Composition, CompositionLayer };
 
 export interface Derivation {
     name: string;

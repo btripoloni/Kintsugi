@@ -1,5 +1,5 @@
 import { join } from "jsr:@std/path";
-import type { EnvironmentConfig, RunManifest } from "./types/environment.ts";
+import type { EnvironmentConfig, RunManifest } from "@btripoloni/kintsugi";
 
 export interface ExecutorOptions {
   compositionPath: string;

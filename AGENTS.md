@@ -30,7 +30,46 @@ Expression (TS) -> Recipe (JSON) -> Build (Store)
 
 ---
 
-## 2. Monorepo Structure
+## 2. Monorepo Architecture
+
+> **This is a Deno Workspace monorepo.** The root `deno.json` declares a `workspace` containing all packages. The SDK and CLI live in the same repository to enable **zero-friction code sharing** — there is no reason to duplicate code between them.
+
+### 2.1 Workspace Structure
+
+```
+kintsugi/
+├── apps/
+│   └── cli/                      # CLI application (consumer)
+├── packages/
+│   └── sdk/                      # SDK library (source of truth)
+├── deno.json                     # Root workspace configuration
+└── AGENTS.md
+```
+
+### 2.2 Package Roles
+
+| Package | Role | Distribution |
+|---------|------|--------------|
+| `packages/sdk` | **Source of truth** for types, interfaces, and shared logic | JSR as `@btripoloni/kintsugi` |
+| `apps/cli` | CLI application that **consumes** the SDK | Compiled binary for Linux distributions |
+
+### 2.3 Code Sharing Rules
+
+**These rules are mandatory:**
+
+1. **The SDK is the single source of truth** for all types, interfaces, utilities, and logic that could be used by more than one package
+2. **The CLI must never duplicate code from the SDK** — if the CLI needs something the SDK already provides, import it via `@btripoloni/kintsugi`
+3. **If new shared logic is needed, add it to the SDK first**, then import from the CLI
+4. **The CLI may only contain**: CLI-specific commands, argument parsing, user interaction, and glue code that orchestrates SDK primitives
+5. **No file copies** — if a file exists in both `packages/sdk/src/` and `apps/cli/src/`, it is a bug. Delete the CLI copy and import from the SDK
+
+### 2.4 Rationale
+
+The SDK and CLI are in the same repository so they can share code **without publishing**. During development, the workspace resolves `@btripoloni/kintsugi` to the local SDK source. For distribution, the SDK is published to JSR and the CLI is compiled into a standalone binary for Linux.
+
+---
+
+## 3. Monorepo Directory Structure
 
 ```
 kintsugi/
@@ -43,23 +82,22 @@ kintsugi/
 │       │   ├── executor/        # Execution with OverlayFS
 │       │   ├── sources/         # Source fetchers (url, local, etc)
 │       │   ├── store/           # Recipe and Vase management
-│       │   ├── lib/             # Core lib (hash, modpack)
 │       │   └── tests/           # CLI tests
 │       └── deno.json            # CLI configuration
 ├── packages/
 │   └── sdk/                      # SDK for users to create recipes
 │       ├── src/
 │       │   ├── types/            # TypeScript types (Derivation, Source, etc)
-│       │   ├── lib/             # Helpers (compose, resolveTransitiveLayers)
+│       │   ├── lib/             # Helpers (compose, resolveTransitiveLayers, hash)
 │       │   └── index.ts          # SDK exports
 │       └── deno.json            # SDK configuration
-├── deno.json                    # Root configuration
+├── deno.json                    # Root workspace configuration
 └── AGENTS.md                    # This file
 ```
 
 ---
 
-## 3. Development Workflow
+## 4. Development Workflow
 
 ### 3.1 Test-Driven Development (TDD)
 
@@ -108,7 +146,7 @@ Deno.test("FeatureName", async (t) => {
 
 ---
 
-## 4. Running the Application
+## 5. Running the Application
 
 ### CLI
 
@@ -130,7 +168,7 @@ import { Derivation, Source } from "@btripoloni/kintsugi";
 
 ---
 
-## 5. Running Tests
+## 6. Running Tests
 
 ```bash
 # Run all tests
@@ -149,7 +187,7 @@ deno test -v ./
 
 ---
 
-## 6. Code Style Guidelines
+## 7. Code Style Guidelines
 
 ### 6.1 General Principles
 
@@ -198,7 +236,7 @@ import { Derivation, Source } from "@btripoloni/kintsugi";
 
 ---
 
-## 7. Package Configuration
+## 8. Package Configuration
 
 ### SDK (packages/sdk/deno.json)
 
@@ -228,7 +266,7 @@ import { Derivation, Source } from "@btripoloni/kintsugi";
 
 ---
 
-## 8. Key Interfaces
+## 9. Key Interfaces
 
 ### 8.1 Derivation
 
@@ -265,7 +303,7 @@ interface Recipe {
 
 ---
 
-## 9. Testing Conventions
+## 10. Testing Conventions
 
 - Test files: `*_test.ts` in the same directory as the implementation
 - Test functions: `Deno.test("name", async (t) => { ... })`
@@ -294,7 +332,7 @@ Deno.test("FeatureName", async (t) => {
 
 ---
 
-## 10. Linting and Verification
+## 11. Linting and Verification
 
 **Always run these before submitting:**
 
@@ -314,7 +352,7 @@ deno test ./packages/sdk/
 
 ---
 
-## 11. Module Guidelines
+## 12. Module Guidelines
 
 - Each module should have a focused responsibility
 - Use interfaces to define contracts
@@ -345,14 +383,14 @@ const root = getKintsugiRoot();
 
 ---
 
-## 12. Prerequisites
+## 13. Prerequisites
 
 - Deno 2.0 or higher
 - fuse-overlayfs (for modpack execution via OverlayFS)
 
 ---
 
-## 13. Publishing the SDK
+## 14. Publishing the SDK
 
 The SDK is published to JSR:
 
@@ -364,7 +402,7 @@ deno publish
 
 ---
 
-## 14. Important Notes
+## 15. Important Notes
 
 1. The codebase is AI-generated - expect inconsistencies and be willing to refactor
 2. Always write tests first (TDD)
