@@ -1,4 +1,5 @@
 import type { BuildOptions, Derivation, Source } from "../types/derivation.ts";
+import type { Fetcher } from "../types/fetchers.ts";
 import { hashDerivation } from "./hash.ts";
 
 export function resolveTransitiveLayers(roots: Derivation[]): Derivation[] {
