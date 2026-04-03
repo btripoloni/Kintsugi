@@ -11,7 +11,7 @@ export async function executeComposition(
         const layerName = typeof layer === "string" ? layer : layer.out;
         if (!layerName) continue;
 
-        const sourceDir = join(ctx.outputDir, "..", "shards", layerName);
+        const sourceDir = join(ctx.outputDir, "..", layerName);
         const destDir = join(ctx.outputDir, layerName);
 
         try {

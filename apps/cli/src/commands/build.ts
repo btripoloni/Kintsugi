@@ -74,14 +74,15 @@ async function buildShard(
     src: Fetcher,
     modlistPath: string,
     storeDir: string,
+    recipesDir: string,
 ): Promise<void> {
-    const exists = await recipeExists(storeDir, out);
+    const exists = await recipeExists(recipesDir, out);
     if (exists) {
         console.log(`Shard ${out} already exists in store, skipping build`);
         return;
     }
 
-    const shardDir = join(storeDir, "shards", out);
+    const shardDir = join(storeDir, out);
     await ensureDir(shardDir);
 
     try {
@@ -97,7 +98,7 @@ async function buildShard(
         src,
     };
 
-    await saveRecipe(storeDir, out, recipe);
+    await saveRecipe(recipesDir, out, recipe);
     console.log(`Created shard ${out}`);
 }
 
@@ -106,11 +107,11 @@ async function buildComposition(
     layers: string[],
     storeDir: string,
 ): Promise<void> {
-    const compositionDir = join(storeDir, "compositions", out);
+    const compositionDir = join(storeDir, out);
     await ensureDir(compositionDir);
 
     for (const layer of layers) {
-        const shardDir = join(storeDir, "shards", layer);
+        const shardDir = join(storeDir, layer);
         const linkPath = join(compositionDir, layer);
         try {
             await Deno.symlink(shardDir, linkPath);
@@ -151,20 +152,18 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
         return;
     }
 
-    const args = buildArgs || parseBuildArgs();
+    const { modlistPath, root } = buildArgs || parseBuildArgs();
 
-    const modlistPath = args.modlistPath;
-    const storeDir = join(args.root, "store");
+    const storeDir = join(root, "store");
+    const recipesDir = join(root, "recipes");
 
     await ensureDir(storeDir);
-    await ensureDir(join(storeDir, "recipes"));
-    await ensureDir(join(storeDir, "shards"));
-    await ensureDir(join(storeDir, "compositions"));
+    await ensureDir(recipesDir);
 
     const modlistName = modlistPath.split("/").pop() || "unknown";
     console.log(`Building modlist '${modlistName}'...`);
 
-    const result = await interpretModlist(modlistPath, storeDir);
+    const result = await interpretModlist(modlistPath, recipesDir);
     const shards = result.shards;
     const rootOut = result.rootOut;
 
@@ -173,7 +172,7 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
     for (const drv of shards) {
         const src = drv.src as Fetcher;
         if (src.type !== "composition") {
-            await buildShard(drv.out!, src, modlistPath, storeDir);
+            await buildShard(drv.out!, src, modlistPath, storeDir, recipesDir);
         }
     }
 
@@ -189,11 +188,11 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
         await buildComposition(rootOut, [rootOut], storeDir);
     }
 
-    const targetModlistDir = join(args.root, "modlists", modlistName);
+    const targetModlistDir = join(root, "modlists", modlistName);
     await ensureDir(targetModlistDir);
 
     const activePath = join(targetModlistDir, "active");
-    const compositionPath = join(storeDir, "compositions", rootOut);
+    const compositionPath = join(storeDir, rootOut);
 
     try {
         await Deno.remove(activePath);

@@ -1,3 +1,4 @@
+import { join } from "jsr:@std/path";
 import { readRecipeByName } from "../store/store.ts";
 import { getKintsugiRoot } from "../paths.ts";
 import { executeComposition, executeLocal, executeUrl, executeVase } from "../sources/index.ts";
@@ -5,7 +6,7 @@ import type { Composition, Fetcher, FetchLocal, FetchUrl, FetchVase } from "@btr
 
 export interface CompileArgs {
     recipeName: string;
-    store: string;
+    recipesDir: string;
     modlist: string;
     output: string;
     root: string;
@@ -15,24 +16,26 @@ export function parseCompileArgs(args: string[] = Deno.args.slice(1)): CompileAr
     const recipeName = args[1];
     if (!recipeName) {
         console.error(
-            "Usage: kintsugi compile <recipe-name> --store <store-dir> --modlist <modlist-dir> --output <output-dir> [--root <root-dir>]",
+            "Usage: kintsugi compile <recipe-name> --recipes-dir <dir> --modlist <modlist-dir> --output <output-dir> [--root <root-dir>]",
         );
         Deno.exit(1);
     }
 
-    const storeIndex = args.indexOf("--store");
+    const recipesDirIndex = args.indexOf("--recipes-dir");
     const modlistIndex = args.indexOf("--modlist");
     const outputIndex = args.indexOf("--output");
     const rootIndex = args.indexOf("--root");
 
-    const store = storeIndex !== -1 ? args[storeIndex + 1] : "store";
+    const recipesDir = recipesDirIndex !== -1
+        ? args[recipesDirIndex + 1]
+        : join(getKintsugiRoot(), "recipes");
     const modlist = modlistIndex !== -1 ? args[modlistIndex + 1] : ".";
     const output = outputIndex !== -1 ? args[outputIndex + 1] : "output";
     const root = rootIndex !== -1 ? args[rootIndex + 1] : getKintsugiRoot();
 
     return {
         recipeName,
-        store,
+        recipesDir,
         modlist,
         output,
         root,
@@ -71,21 +74,21 @@ export async function compileCommand(compileArgs?: CompileArgs): Promise<void> {
 Kintsugi Compile
 
 Usage:
-  kintsugi compile <recipe-name> --store <store-dir> --modlist <modlist-dir> --output <output-dir> [--root <root-dir>]
+  kintsugi compile <recipe-name> --recipes-dir <dir> --modlist <modlist-dir> --output <output-dir> [--root <root-dir>]
 
 Options:
-  --store <dir>   Store directory (default: store)
-  --modlist <dir> Modlist root directory (default: .)
-  --output <dir>  Output directory (default: output)
-  --root <dir>    Kintsugi root directory (default: ~/.kintsugi)
-  --help, -h      Show this help message
+  --recipes-dir <dir> Recipes directory (default: ~/.kintsugi/recipes)
+  --modlist <dir>     Modlist root directory (default: .)
+  --output <dir>      Output directory (default: output)
+  --root <dir>        Kintsugi root directory (default: ~/.kintsugi)
+  --help, -h          Show this help message
 `);
         return;
     }
 
     const args = compileArgs || parseCompileArgs();
 
-    const recipe = await readRecipeByName(args.store, args.recipeName);
+    const recipe = await readRecipeByName(args.recipesDir, args.recipeName);
 
     if (!recipe) {
         console.error(`Error: recipe '${args.recipeName}' not found`);

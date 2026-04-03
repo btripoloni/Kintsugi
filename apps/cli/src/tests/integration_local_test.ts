@@ -9,11 +9,12 @@ Deno.test("integration: composition of multiple local sources", async (t) => {
     const tmpDir = await Deno.makeTempDir();
 
     const storeDir = join(tmpDir, "store");
+    const recipesDir = join(tmpDir, "recipes");
     const modlistDir = join(tmpDir, "modlist");
     const outputDir = join(tmpDir, "output");
 
     await Deno.mkdir(modlistDir, { recursive: true });
-    await Deno.mkdir(join(storeDir, "recipes"), { recursive: true });
+    await Deno.mkdir(recipesDir, { recursive: true });
     await Deno.mkdir(outputDir, { recursive: true });
 
     await Deno.writeTextFile(join(modlistDir, "mod1.txt"), "content 1");
@@ -35,13 +36,13 @@ Deno.test("integration: composition of multiple local sources", async (t) => {
         out: out1,
         src: { type: "local", path: "mod1.txt" },
     };
-    await saveRecipe(storeDir, out1, recipe1);
+    await saveRecipe(recipesDir, out1, recipe1);
 
     const recipe2: Recipe = {
         out: out2,
         src: { type: "local", path: "mod2.txt" },
     };
-    await saveRecipe(storeDir, out2, recipe2);
+    await saveRecipe(recipesDir, out2, recipe2);
 
     const compositionOut = "composed-hash-composed-1.0.0";
     const compositionLayers = [out1, out2];
@@ -49,9 +50,9 @@ Deno.test("integration: composition of multiple local sources", async (t) => {
         out: compositionOut,
         src: { type: "composition", layers: compositionLayers },
     };
-    await saveRecipe(storeDir, compositionOut, compositionRecipe);
+    await saveRecipe(recipesDir, compositionOut, compositionRecipe);
 
-    const fetchedComp = await readRecipeByName(storeDir, compositionOut);
+    const fetchedComp = await readRecipeByName(recipesDir, compositionOut);
     assertExists(fetchedComp);
 
     await executeComposition(fetchedComp!.src as Composition, {

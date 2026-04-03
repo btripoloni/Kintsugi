@@ -4,6 +4,7 @@ import type { Shard } from "@btripoloni/kintsugi";
 import { resolveTransitiveLayers } from "../lib/modpack.ts";
 import { hashShard } from "../lib/hash.ts";
 import type { Recipe } from "../lib/recipe.ts";
+import { saveRecipe } from "../store/store.ts";
 
 export interface InterpretationResult {
     shards: Shard[];
@@ -78,8 +79,7 @@ export async function interpretShard(
     }
 
     if (recipesDir) {
-        const recipesDirPath = join(recipesDir, "recipes");
-        await ensureDir(recipesDirPath);
+        await ensureDir(recipesDir);
 
         for (const drv of finalShards) {
             let srcForRecipe = drv.src;
@@ -97,7 +97,7 @@ export async function interpretShard(
                 _dependencyHashes: drv._dependencyHashes,
             };
 
-            await saveRecipe(recipesDirPath, drv.out!, recipe);
+            await saveRecipe(recipesDir, drv.out!, recipe);
         }
     }
 
@@ -127,5 +127,3 @@ export async function interpretModlist(
 
     return interpretShard({ shard, recipesDir });
 }
-
-import { saveRecipe } from "../store/store.ts";
