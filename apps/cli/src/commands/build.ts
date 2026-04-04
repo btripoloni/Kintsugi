@@ -1,7 +1,7 @@
 import { dirname, join, relative } from "jsr:@std/path";
 import { ensureDir, walk } from "jsr:@std/fs";
 import { interpretModlist } from "../interpreter/interpreter.ts";
-import { recipeExists, saveRecipe } from "../store/store.ts";
+import { saveRecipe } from "../store/store.ts";
 import { getKintsugiRoot } from "../paths.ts";
 import { executeComposition, executeLocal, executeUrl, executeVase } from "../sources/index.ts";
 import type { Composition, Fetcher, FetchLocal, FetchUrl, FetchVase } from "@btripoloni/kintsugi";
@@ -81,22 +81,22 @@ async function buildShard(
     recipesDir: string,
     root: string,
 ): Promise<void> {
-    const exists = await recipeExists(recipesDir, out);
-    if (exists) {
-        console.log(`Shard ${out} already exists in store, skipping build`);
-        return;
+    const shardDir = join(storeDir, out);
+
+    // Check if shard already exists in store (not just recipe)
+    try {
+        const stat = await Deno.stat(shardDir);
+        if (stat.isDirectory) {
+            console.log(`Shard ${out} already exists in store, skipping build`);
+            return;
+        }
+    } catch {
+        // Directory doesn't exist yet, proceed
     }
 
-    const shardDir = join(storeDir, out);
     await ensureDir(shardDir);
 
-    try {
-        await executeSource(src, modlistPath, shardDir, root);
-    } catch (e) {
-        console.warn(
-            `Warning: Failed to fetch source for ${out}: ${e instanceof Error ? e.message : e}`,
-        );
-    }
+    await executeSource(src, modlistPath, shardDir, root);
 
     const recipe = {
         out,
