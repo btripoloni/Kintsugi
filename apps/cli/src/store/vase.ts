@@ -1,11 +1,5 @@
 import { join } from "jsr:@std/path";
-
-export interface VaseMetadata {
-    name: string;
-    path: string;
-    addedAt: string;
-    game?: string;
-}
+import { copy } from "jsr:@std/fs";
 
 export function getVasesDir(root: string): string {
     return join(root, "vases");
@@ -45,38 +39,28 @@ export async function addVase(
     root: string,
     name: string,
     path: string,
-    game?: string,
-): Promise<void> {
+): Promise<string> {
     const vasesDir = getVasesDir(root);
     await Deno.mkdir(vasesDir, { recursive: true });
 
-    const targetPath = join(vasesDir, name);
-    await Deno.mkdir(targetPath, { recursive: true });
+    let counter = 1;
+    let finalName = `${name}-${counter}`;
+    
+    // Auto increment version suffix, always starts at -1
+    while (await vaseExists(root, finalName)) {
+        counter++;
+        finalName = `${name}-${counter}`;
+    }
 
-    const metadata: VaseMetadata = {
-        name,
-        path,
-        addedAt: new Date().toISOString(),
-        game,
-    };
+    const targetPath = join(vasesDir, finalName);
 
-    const metadataPath = join(targetPath, "metadata.json");
-    await Deno.writeTextFile(metadataPath, JSON.stringify(metadata, null, 2));
+    // Copy ALL files directly from source path into the vase directory
+    await copy(path, targetPath, { overwrite: true });
+    
+    return finalName;
 }
 
 export async function removeVase(root: string, name: string): Promise<void> {
     const vasePath = getVasePath(root, name);
     await Deno.remove(vasePath, { recursive: true });
-}
-
-export async function getVaseMetadata(root: string, name: string): Promise<VaseMetadata | null> {
-    const vasePath = getVasePath(root, name);
-    const metadataPath = join(vasePath, "metadata.json");
-
-    try {
-        const content = await Deno.readTextFile(metadataPath);
-        return JSON.parse(content) as VaseMetadata;
-    } catch {
-        return null;
-    }
 }

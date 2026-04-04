@@ -1,5 +1,5 @@
 import { getKintsugiRoot } from "../paths.ts";
-import { addVase, getVaseMetadata, listVases, removeVase } from "../store/vase.ts";
+import { addVase, listVases, removeVase } from "../store/vase.ts";
 
 export interface VaseArgs {
     subcommand: string;
@@ -43,13 +43,7 @@ export function parseVaseArgs(args: string[] = Deno.args.slice(2)): VaseArgs {
         };
     }
 
-    if (subcommand === "info") {
-        return {
-            subcommand,
-            name: filteredArgs[1],
-            root,
-        };
-    }
+
 
     return { subcommand: "help" };
 }
@@ -66,7 +60,6 @@ Commands:
   add <name> <path>    Add a new vase from a directory
   remove <name>        Remove a vase
   list                 List all vases
-  info <name>          Show vase metadata
 
 Options:
   --root <dir>         Kintsugi root directory (default: ~/.kintsugi)
@@ -90,8 +83,8 @@ Examples:
                 throw new Error("name and path are required for 'add'");
             }
             console.log(`Adding vase '${args.name}' from '${args.sourcePath}'...`);
-            await addVase(root, args.name, args.sourcePath);
-            console.log(`Vase '${args.name}' created successfully`);
+            const createdName = await addVase(root, args.name, args.sourcePath);
+            console.log(`Vase '${createdName}' created successfully`);
             break;
         }
 
@@ -120,19 +113,7 @@ Examples:
             break;
         }
 
-        case "info": {
-            if (!args.name) {
-                throw new Error("name is required for 'info'");
-            }
-            const metadata = await getVaseMetadata(root, args.name);
-            if (!metadata) {
-                throw new Error(`Vase '${args.name}' not found`);
-            }
-            console.log(`Vase: ${metadata.name}`);
-            console.log(`Created: ${metadata.addedAt}`);
-            console.log(`Source: ${metadata.path}`);
-            break;
-        }
+
 
         default:
             console.log(`Unknown subcommand: ${args.subcommand}`);
