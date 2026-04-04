@@ -1,6 +1,8 @@
 export interface UmuConfig {
-    version: string;
-    id: string;
+    /** Steam application ID (or umu game id); optional — umu-run may use umu-default. */
+    id?: string;
+    /** Proton / tool label for umu-run; optional when omitted from the CLI argv. */
+    version?: string;
 }
 
 export interface NativeEnvironment {
@@ -9,8 +11,8 @@ export interface NativeEnvironment {
 
 export interface UmuEnvironment {
     type: "umu";
-    version: string;
-    id: string;
+    id?: string;
+    version?: string;
 }
 
 export type EnvironmentConfig = NativeEnvironment | UmuEnvironment;

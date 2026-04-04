@@ -1,6 +1,6 @@
 export interface UmuConfig {
-    version: string;
-    id: string;
+    id?: string;
+    version?: string;
 }
 
 export interface NativeEnvironment {
@@ -9,8 +9,8 @@ export interface NativeEnvironment {
 
 export interface UmuEnvironment {
     type: "umu";
-    version: string;
-    id: string;
+    id?: string;
+    version?: string;
 }
 
 export type EnvironmentConfig = NativeEnvironment | UmuEnvironment;

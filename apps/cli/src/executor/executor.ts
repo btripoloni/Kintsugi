@@ -94,30 +94,59 @@ async function executeNative(
 async function executeUmu(
     mergedPath: string,
     entrypoint: string,
-    umuConfig: { version: string; id: string },
+    umuConfig: { version?: string; id?: string },
     args: string[] = [],
     env: Record<string, string> = {},
 ): Promise<void> {
+    const exePath = entrypoint.startsWith("/") ? entrypoint : join(mergedPath, entrypoint);
+    try {
+        await Deno.stat(exePath);
+    } catch {
+        throw new Error(
+            `Executable not found in the merged overlay at ${exePath}. ` +
+                "Check write_run entrypoint and ensure the game (vase) layer is in the composition.",
+        );
+    }
+
+    let launchExe = exePath;
+    try {
+        launchExe = await Deno.realPath(exePath);
+    } catch {
+        // fuse-overlayfs or odd layouts: keep exePath
+    }
+
+    const winePrefix = join(mergedPath, "..", "prefix");
+    const umuId = typeof umuConfig.id === "string" ? umuConfig.id.trim() : "";
+    const umuVersion = typeof umuConfig.version === "string" ? umuConfig.version.trim() : "";
+
+    const umuEnv: Record<string, string> = {
+        ...Deno.env.toObject(),
+        ...env,
+        KINTSUGI_ROOT: mergedPath,
+        WINEPREFIX: winePrefix,
+        STEAM_COMPAT_DATA_PATH: winePrefix,
+    };
+    if (umuId) {
+        umuEnv.GAMEID = umuId;
+    }
+
+    const umuArgs = umuId !== "" && umuVersion !== ""
+        ? [umuId, umuVersion, launchExe, ...args]
+        : [launchExe, ...args];
+
     const proc = new Deno.Command("umu-run", {
-        args: [
-            umuConfig.id,
-            umuConfig.version,
-            entrypoint,
-            ...args,
-        ],
+        args: umuArgs,
         cwd: mergedPath,
-        env: {
-            ...Deno.env.toObject(),
-            ...env,
-            KINTSUGI_ROOT: mergedPath,
-            WINEPREFIX: join(mergedPath, "..", "prefix"),
-        },
+        env: umuEnv,
+        stdout: "inherit",
+        stderr: "inherit",
+        stdin: "inherit",
     });
 
-    const output = await proc.output();
-    if (!output.success) {
-        const error = new TextDecoder().decode(output.stderr);
-        throw new Error(`UMU execution failed: ${error}`);
+    const child = proc.spawn();
+    const status = await child.status;
+    if (!status.success) {
+        throw new Error(`umu-run exited with code ${status.code}`);
     }
 }
 
