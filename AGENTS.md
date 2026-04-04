@@ -292,6 +292,7 @@ interface Shard {
 | `write_json`  | Create JSON file            | `path`, `content`                                 |
 | `vase`        | Import from Vase collection | `vase`                                            |
 | `composition` | Compose multiple shards     | `layers` (strings or Shard objects)               |
+| `write_run`   | Create execution manifest   | `profile`, `entrypoint`, `args?`, `env?`          |
 
 ### 9.3 Recipe
 

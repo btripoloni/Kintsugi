@@ -5,6 +5,7 @@ import type {
     FetchUrl,
     FetchVase,
     WriteJson,
+    WriteRun,
 } from "./fetchers.ts";
 
 export { Composition, CompositionLayer };
@@ -20,7 +21,7 @@ export interface Shard {
     out?: string;
 }
 
-export type Source = FetchUrl | FetchLocal | WriteJson | Composition | FetchVase;
+export type Source = FetchUrl | FetchLocal | WriteJson | Composition | FetchVase | WriteRun;
 
 export interface BuildOptions {
     name: string;

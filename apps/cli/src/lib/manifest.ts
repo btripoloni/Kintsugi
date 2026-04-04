@@ -2,10 +2,11 @@ import { join } from "jsr:@std/path";
 import type { EnvironmentConfig, RunManifest } from "../types/environment.ts";
 
 export async function readEnvironmentConfig(modlistPath: string): Promise<EnvironmentConfig> {
-    const envPath = join(modlistPath, "environment.json");
+    const modlistJsonPath = join(modlistPath, "modlist.json");
     try {
-        const content = await Deno.readTextFile(envPath);
-        return JSON.parse(content) as EnvironmentConfig;
+        const content = await Deno.readTextFile(modlistJsonPath);
+        const modlist = JSON.parse(content);
+        return modlist.environment || { type: "native" };
     } catch {
         return { type: "native" };
     }

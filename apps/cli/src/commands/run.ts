@@ -35,6 +35,16 @@ export async function runModlist(args: RunArgs): Promise<void> {
     const modlistPath = join(args.kintsugiRoot, "modlists", args.modlist);
     const activePath = join(modlistPath, "active");
 
+    // Verify modlist.json exists
+    const modlistJsonPath = join(modlistPath, "modlist.json");
+    try {
+        await Deno.stat(modlistJsonPath);
+    } catch {
+        throw new Error(
+            `Modlist '${args.modlist}' is not properly built. Run 'kintsugi build ${args.modlist}' first.`,
+        );
+    }
+
     let compositionPath: string;
     try {
         const activeTarget = await Deno.readLink(activePath);

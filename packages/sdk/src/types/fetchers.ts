@@ -42,9 +42,18 @@ export interface FetchVase extends BaseFetcher {
     vase: string;
 }
 
+export interface WriteRun extends BaseFetcher {
+    type: "write_run";
+    profile: string;
+    entrypoint: string;
+    args?: string[];
+    env?: Record<string, string>;
+}
+
 export type Fetcher =
     | FetchUrl
     | FetchLocal
     | WriteJson
     | Composition
-    | FetchVase;
+    | FetchVase
+    | WriteRun;

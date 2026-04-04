@@ -79,7 +79,17 @@ export default {
 } as const;
 `;
 
-    const modlistJsonContent = JSON.stringify({ name }, null, 2);
+    const modlistJsonContent = JSON.stringify(
+        {
+            name,
+            version: "1.0.0",
+            environment: {
+                type: "native",
+            },
+        },
+        null,
+        2,
+    );
 
     await Deno.writeTextFile(denoJsonPath, denoJsonContent);
     await Deno.writeTextFile(mainTsPath, mainTsContent);

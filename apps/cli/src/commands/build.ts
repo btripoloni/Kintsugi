@@ -3,8 +3,23 @@ import { ensureDir, walk } from "jsr:@std/fs";
 import { interpretModlist } from "../interpreter/interpreter.ts";
 import { saveRecipe } from "../store/store.ts";
 import { getKintsugiRoot } from "../paths.ts";
-import { executeComposition, executeLocal, executeUrl, executeVase } from "../sources/index.ts";
-import type { Composition, Fetcher, FetchLocal, FetchUrl, FetchVase } from "@btripoloni/kintsugi";
+import {
+    executeComposition,
+    executeJson,
+    executeLocal,
+    executeRun,
+    executeUrl,
+    executeVase,
+} from "../sources/index.ts";
+import type {
+    Composition,
+    Fetcher,
+    FetchLocal,
+    FetchUrl,
+    FetchVase,
+    WriteJson,
+    WriteRun,
+} from "@btripoloni/kintsugi";
 
 export interface BuildArgs {
     modlistPath: string;
@@ -67,6 +82,10 @@ async function executeSource(
             await executeVase(fetcher as FetchVase, ctx, root);
             break;
         case "write_json":
+            await executeJson(fetcher as WriteJson, ctx);
+            break;
+        case "write_run":
+            await executeRun(fetcher as WriteRun, ctx);
             break;
         default:
             throw new Error(`Unknown source type: ${(fetcher as Fetcher).type}`);
@@ -142,15 +161,46 @@ async function buildComposition(
         }
     }
 
-    const kintsugiDir = join(compositionDir, "kintsugi", "exec");
+    // Collect kintsugi directories from all layers and merge them
+    const kintsugiDir = join(compositionDir, "kintsugi");
     await ensureDir(kintsugiDir);
 
-    const runJsonPath = join(kintsugiDir, "default.run.json");
-    const runJson = {
-        entrypoint: "/bin/sh",
-        args: ["-c", "echo 'No run configured'"],
-    };
-    await Deno.writeTextFile(runJsonPath, JSON.stringify(runJson, null, 2));
+    for (const layer of layers) {
+        const layerShardDir = join(storeDir, layer);
+        const layerKintsugiDir = join(layerShardDir, "kintsugi");
+
+        try {
+            await Deno.stat(layerKintsugiDir);
+        } catch {
+            // Layer doesn't have kintsugi directory, skip
+            continue;
+        }
+
+        try {
+            for await (const entry of walk(layerKintsugiDir)) {
+                if (!entry.isFile) continue;
+
+                const relPath = relative(layerKintsugiDir, entry.path);
+                const targetPath = join(kintsugiDir, relPath);
+
+                await ensureDir(dirname(targetPath));
+
+                try {
+                    await Deno.remove(targetPath);
+                } catch {
+                    // File doesn't exist yet, which is fine
+                }
+
+                await Deno.link(entry.path, targetPath);
+            }
+        } catch (e) {
+            console.warn(
+                `Warning: failed to process kintsugi directory from layer ${layer}: ${
+                    e instanceof Error ? e.message : e
+                }`,
+            );
+        }
+    }
 
     console.log(`Created composition ${out}`);
 }
@@ -210,6 +260,17 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
 
     const targetModlistDir = join(root, "modlists", modlistName);
     await ensureDir(targetModlistDir);
+
+    // Copy modlist.json to kintsugi directory
+    const sourceModlistJson = join(modlistPath, "modlist.json");
+    const targetModlistJson = join(targetModlistDir, "modlist.json");
+
+    try {
+        await Deno.copyFile(sourceModlistJson, targetModlistJson);
+        console.log(`Copied modlist.json to ${targetModlistDir}`);
+    } catch (e) {
+        console.warn(`Warning: failed to copy modlist.json: ${e instanceof Error ? e.message : e}`);
+    }
 
     const activePath = join(targetModlistDir, "active");
     const compositionPath = join(storeDir, rootOut);
