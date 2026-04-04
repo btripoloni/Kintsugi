@@ -1,5 +1,5 @@
 import type { BuildOptions, Shard, Source } from "@btripoloni/kintsugi";
-import { hashShard } from "./hash.ts";
+import { hashShard } from "@btripoloni/kintsugi";
 
 export function resolveTransitiveLayers(roots: Shard[]): Shard[] {
     const sorted: Shard[] = [];

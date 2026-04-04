@@ -1,10 +1,10 @@
-import { join } from "jsr:@std/path";
-import { ensureDir } from "jsr:@std/fs";
+import { dirname, join, relative } from "jsr:@std/path";
+import { ensureDir, walk } from "jsr:@std/fs";
 import { interpretModlist } from "../interpreter/interpreter.ts";
 import { recipeExists, saveRecipe } from "../store/store.ts";
 import { getKintsugiRoot } from "../paths.ts";
 import { executeComposition, executeLocal, executeUrl, executeVase } from "../sources/index.ts";
-import type { Fetcher } from "@btripoloni/kintsugi";
+import type { Composition, Fetcher, FetchLocal, FetchUrl, FetchVase } from "@btripoloni/kintsugi";
 
 export interface BuildArgs {
     modlistPath: string;
@@ -49,18 +49,22 @@ async function executeSource(
     fetcher: Fetcher,
     modlistRoot: string,
     storeDir: string,
+    root: string,
 ): Promise<void> {
     const ctx = { modlistRoot, outputDir: storeDir };
 
     switch (fetcher.type) {
         case "local":
-            await executeLocal(fetcher as any, ctx);
+            await executeLocal(fetcher as FetchLocal, ctx);
             break;
         case "url":
-            await executeUrl(fetcher as any, ctx);
+            await executeUrl(fetcher as FetchUrl, ctx);
             break;
         case "composition":
-            await executeComposition(fetcher as any, ctx);
+            await executeComposition(fetcher as Composition, ctx);
+            break;
+        case "vase":
+            await executeVase(fetcher as FetchVase, ctx, root);
             break;
         case "write_json":
             break;
@@ -75,6 +79,7 @@ async function buildShard(
     modlistPath: string,
     storeDir: string,
     recipesDir: string,
+    root: string,
 ): Promise<void> {
     const exists = await recipeExists(recipesDir, out);
     if (exists) {
@@ -86,7 +91,7 @@ async function buildShard(
     await ensureDir(shardDir);
 
     try {
-        await executeSource(src, modlistPath, shardDir);
+        await executeSource(src, modlistPath, shardDir, root);
     } catch (e) {
         console.warn(
             `Warning: Failed to fetch source for ${out}: ${e instanceof Error ? e.message : e}`,
@@ -112,13 +117,28 @@ async function buildComposition(
 
     for (const layer of layers) {
         const shardDir = join(storeDir, layer);
-        const linkPath = join(compositionDir, layer);
+
         try {
-            await Deno.symlink(shardDir, linkPath);
-        } catch (e) {
-            if (!(e instanceof Deno.errors.AlreadyExists)) {
-                throw e;
+            for await (const entry of walk(shardDir)) {
+                if (!entry.isFile) continue;
+
+                const relPath = relative(shardDir, entry.path);
+                const targetPath = join(compositionDir, relPath);
+
+                await ensureDir(dirname(targetPath));
+
+                try {
+                    await Deno.remove(targetPath);
+                } catch {
+                    // File doesn't exist yet, which is fine
+                }
+
+                await Deno.link(entry.path, targetPath);
             }
+        } catch (e) {
+            console.warn(
+                `Warning: failed to process layer ${layer}: ${e instanceof Error ? e.message : e}`,
+            );
         }
     }
 
@@ -172,7 +192,7 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
     for (const drv of shards) {
         const src = drv.src as Fetcher;
         if (src.type !== "composition") {
-            await buildShard(drv.out!, src, modlistPath, storeDir, recipesDir);
+            await buildShard(drv.out!, src, modlistPath, storeDir, recipesDir, root);
         }
     }
 

@@ -18,12 +18,13 @@ Kintsugi is a declarative, reproducible, and isolated modpack manager for games,
 
 ### 1.2 Architecture Components
 
-| Component | Responsibility |
-|-----------|----------------|
-| **SDK** | Library for users to create recipes in TypeScript |
-| **CLI** | Command-line interface (run, build, init, etc) |
+| Component | Responsibility                                    |
+| --------- | ------------------------------------------------- |
+| **SDK**   | Library for users to create recipes in TypeScript |
+| **CLI**   | Command-line interface (run, build, init, etc)    |
 
 ### 1.3 Workflow
+
 ```
 Expression (TS) -> Recipe (JSON) -> Build (Store)
 ```
@@ -48,10 +49,10 @@ kintsugi/
 
 ### 2.2 Package Roles
 
-| Package | Role | Distribution |
-|---------|------|--------------|
-| `packages/sdk` | **Source of truth** for types, interfaces, and shared logic | JSR as `@btripoloni/kintsugi` |
-| `apps/cli` | CLI application that **consumes** the SDK | Compiled binary for Linux distributions |
+| Package        | Role                                                        | Distribution                            |
+| -------------- | ----------------------------------------------------------- | --------------------------------------- |
+| `packages/sdk` | **Source of truth** for types, interfaces, and shared logic | JSR as `@btripoloni/kintsugi`           |
+| `apps/cli`     | CLI application that **consumes** the SDK                   | Compiled binary for Linux distributions |
 
 ### 2.3 Code Sharing Rules
 
@@ -198,14 +199,14 @@ deno test -v ./
 
 ### 6.2 Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Files | kebab-case | `copy_test.ts`, `action.ts` |
-| Packages | kebab-case | `kintsugi-cli`, `kintsugi` |
-| Types/Interfaces | PascalCase | `Action`, `Step`, `Store` |
-| Functions/Methods | camelCase | `newStore`, `execute` |
-| Variables/Constants | camelCase | `modlistPath`, `isValid` |
-| Acronyms | Keep original | `URL`, not `Url` |
+| Type                | Convention    | Example                     |
+| ------------------- | ------------- | --------------------------- |
+| Files               | kebab-case    | `copy_test.ts`, `action.ts` |
+| Packages            | kebab-case    | `kintsugi-cli`, `kintsugi`  |
+| Types/Interfaces    | PascalCase    | `Action`, `Step`, `Store`   |
+| Functions/Methods   | camelCase     | `newStore`, `execute`       |
+| Variables/Constants | camelCase     | `modlistPath`, `isValid`    |
+| Acronyms            | Keep original | `URL`, not `Url`            |
 
 ### 6.3 Formatting
 
@@ -242,10 +243,10 @@ import { Shard, Source } from "@btripoloni/kintsugi";
 
 ```json
 {
-  "name": "@btripoloni/kintsugi",
-  "exports": {
-    ".": "./src/index.ts"
-  }
+    "name": "@btripoloni/kintsugi",
+    "exports": {
+        ".": "./src/index.ts"
+    }
 }
 ```
 
@@ -253,14 +254,14 @@ import { Shard, Source } from "@btripoloni/kintsugi";
 
 ```json
 {
-  "name": "@btripoloni/kintsugi-cli",
-  "tasks": {
-    "start": "deno run -A src/main.ts",
-    "dev": "deno run -A --watch src/main.ts"
-  },
-  "imports": {
-    "@btripoloni/kintsugi": "jsr:@btripoloni/kintsugi"
-  }
+    "name": "@btripoloni/kintsugi-cli",
+    "tasks": {
+        "start": "deno run -A src/main.ts",
+        "dev": "deno run -A --watch src/main.ts"
+    },
+    "imports": {
+        "@btripoloni/kintsugi": "jsr:@btripoloni/kintsugi"
+    }
 }
 ```
 
@@ -268,38 +269,81 @@ import { Shard, Source } from "@btripoloni/kintsugi";
 
 ## 9. Key Interfaces
 
-### 8.1 Shard
+### 9.1 Shard
 
 ```typescript
 interface Shard {
-  name: string;           // Descriptive name (e.g., "skyrim-se")
-  version: string;        // Version (e.g., "1.6.1170")
-  out: string;           // Output: "[hash]-[name]-[version]"
-  src: Source;           // Source type
-  dependencies?: string[]; // List of recipe names (format: "[hash]-[name]-[version]")
-  postbuild?: string;    // Shell script executed after source acquisition
+    name: string; // Descriptive name (e.g., "skyrim-se")
+    version: string; // Version (e.g., "1.6.1170")
+    out?: string; // Output: "[hash]-[name]-[version]"
+    src: Source; // Source type
+    dependencies?: Shard[]; // Full Shard objects (used when compose() returns)
+    _dependencyHashes?: string[]; // List of recipe hashes (format: "[hash]-[name]-[version]")
+    postbuild?: string; // Shell script executed after source acquisition
 }
 ```
 
-### 8.2 Source Types
+### 9.2 Source Types
 
-| Type | Description | Key Parameters |
-|------|-------------|----------------|
-| `url` | Download from remote URL | `url`, `sha256`, `unpack?`, `method?`, `headers?` |
-| `local` | Copy from local filesystem | `path` |
-| `write_json` | Create JSON file | `path`, `content` |
-| `vase` | Import from Vase collection | `vase` |
-| `composition` | Compose multiple shards | `layers` |
+| Type          | Description                 | Key Parameters                                    |
+| ------------- | --------------------------- | ------------------------------------------------- |
+| `url`         | Download from remote URL    | `url`, `sha256`, `unpack?`, `method?`, `headers?` |
+| `local`       | Copy from local filesystem  | `path`                                            |
+| `write_json`  | Create JSON file            | `path`, `content`                                 |
+| `vase`        | Import from Vase collection | `vase`                                            |
+| `composition` | Compose multiple shards     | `layers` (strings or Shard objects)               |
 
-### 8.3 Recipe
+### 9.3 Recipe
 
 ```typescript
 interface Recipe {
-  out: string;           // "[hash]-[name]-[version]"
-  src: Fetcher;          // Source type
-  dependencies?: string[]; // Recipe names this depends on
+    out: string; // "[hash]-[name]-[version]"
+    src: Fetcher; // Source type
+    _dependencyHashes?: string[]; // Recipe hashes this depends on
 }
 ```
+
+### 9.4 Build Flow (`kintsugi build`)
+
+O fluxo de build segue estas etapas:
+
+```
+main.ts (Shard) -> interpretModlist -> interpretShard -> shards[] + recipes JSON
+                                                    |
+                                                    v
+                                            buildCommand
+                                                    |
+                    +-------------------------------+-------------------------------+
+                    |                               |                               |
+              buildShard (non-composition)    buildComposition (composition)    symlink active
+                    |                               |                               |
+              executeSource                   copy layers from store         -> ~/.kintsugi/modlists/<name>/active
+        (vase, url, local, etc)               to composition dir
+```
+
+**Interpreter (`interpretShard`):**
+
+1. Recebe um `Shard` do `main.ts` (pode vir de `compose()`)
+2. Se `src.type === "composition"`:
+   - Se `src.layers` contém objetos Shard: usa-os diretamente
+   - Se `src.layers` contém strings (hashes): usa `shard.dependencies` para obter os objetos Shard completos
+3. Chama `resolveTransitiveLayers([shard, ...dependencies])` para ordenar topologicamente
+4. Para cada shard: se já tem `out`, preserva; senão, chama `hashShard` do SDK
+5. Cria arquivos de receita JSON no `recipesDir`
+6. Retorna `{ shards: Shard[], rootOut: string }`
+
+**Build Command (`buildCommand`):**
+
+1. Chama `interpretModlist` para obter shards e rootOut
+2. Para cada shard non-composition: chama `buildShard` que executa `executeSource` (vase, url, local, etc)
+3. Para o shard composition: chama `buildComposition` que copia layers do store para o dir da composição
+4. Cria symlink `~/.kintsugi/modlists/<name>/active` apontando para a composição final
+
+**Importante sobre `compose()` + `build`:**
+
+- `compose()` retorna um `Shard` com `src.layers` como strings (hashes) e `dependencies` como array de `Shard[]` completos
+- O interpreter DEVE usar `shard.dependencies` quando `src.layers` são strings para processar cada dependência como receita individual
+- Sem isso, as dependências (ex: vases) nunca são criadas no store e a composição fica vazia
 
 ---
 

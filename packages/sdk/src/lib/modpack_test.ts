@@ -23,7 +23,7 @@ Deno.test("compose should process layers without requiring pre-computed out fiel
 
     // Verify
     assertEquals(result.src.type, "composition");
-    
+
     // The composition should have the layer hash
     if (result.src.type === "composition") {
         assertEquals(

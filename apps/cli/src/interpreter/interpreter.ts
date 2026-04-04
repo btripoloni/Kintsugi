@@ -1,8 +1,7 @@
 import { join } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
 import type { Shard } from "@btripoloni/kintsugi";
-import { resolveTransitiveLayers } from "../lib/modpack.ts";
-import { hashShard } from "../lib/hash.ts";
+import { hashShard, resolveTransitiveLayers } from "@btripoloni/kintsugi";
 import type { Recipe } from "../lib/recipe.ts";
 import { saveRecipe } from "../store/store.ts";
 
@@ -36,6 +35,9 @@ export async function interpretShard(
 
         if (layerObjects.length > 0) {
             shards = resolveTransitiveLayers([shard, ...layerObjects as any]);
+        } else if (shard.dependencies && shard.dependencies.length > 0) {
+            // Layers are strings (hashes) - use dependencies to get full shard objects
+            shards = resolveTransitiveLayers([shard, ...shard.dependencies]);
         } else {
             shards = [shard];
         }
@@ -43,10 +45,16 @@ export async function interpretShard(
         shards = [shard];
     }
 
+    // Shards from compose() already have `out` computed - preserve them
+    // Only hash shards that don't have `out` yet (direct Shard without compose)
     const hashedShards: Shard[] = [];
     for (const drv of shards) {
-        const hashed = await hashShard(drv, recipesDir);
-        hashedShards.push(hashed);
+        if (drv.out) {
+            hashedShards.push(drv);
+        } else {
+            const hashed = await hashShard(drv);
+            hashedShards.push(hashed);
+        }
     }
 
     const hashedMap = new Map(
