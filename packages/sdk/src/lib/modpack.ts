@@ -14,6 +14,117 @@ export async function modlist(options: ModlistOptions): Promise<Shard> {
     });
 }
 
+export function url(options: {
+    name: string;
+    version: string;
+    url: string;
+    sha256: string;
+    unpack?: boolean;
+    method?: "GET" | "POST";
+    headers?: Record<string, string>;
+    dependencies?: Shard[];
+    postbuild?: string;
+}): Shard {
+    return {
+        name: options.name,
+        version: options.version,
+        src: {
+            type: "url",
+            url: options.url,
+            sha256: options.sha256,
+            unpack: options.unpack,
+            method: options.method,
+            headers: options.headers,
+        },
+        dependencies: options.dependencies,
+        postbuild: options.postbuild,
+    };
+}
+
+export function local(options: {
+    name: string;
+    version: string;
+    path: string;
+    dependencies?: Shard[];
+    postbuild?: string;
+}): Shard {
+    return {
+        name: options.name,
+        version: options.version,
+        src: {
+            type: "local",
+            path: options.path,
+        },
+        dependencies: options.dependencies,
+        postbuild: options.postbuild,
+    };
+}
+
+export function json(options: {
+    name: string;
+    version: string;
+    path: string;
+    content: unknown;
+    dependencies?: Shard[];
+    postbuild?: string;
+}): Shard {
+    return {
+        name: options.name,
+        version: options.version,
+        src: {
+            type: "write_json",
+            path: options.path,
+            content: options.content,
+        },
+        dependencies: options.dependencies,
+        postbuild: options.postbuild,
+    };
+}
+
+export function run(options: {
+    name: string;
+    version: string;
+    profile: string;
+    entrypoint: string;
+    args?: string[];
+    env?: Record<string, string>;
+    dependencies?: Shard[];
+    postbuild?: string;
+}): Shard {
+    return {
+        name: options.name,
+        version: options.version,
+        src: {
+            type: "write_run",
+            profile: options.profile,
+            entrypoint: options.entrypoint,
+            args: options.args,
+            env: options.env,
+        },
+        dependencies: options.dependencies,
+        postbuild: options.postbuild,
+    };
+}
+
+export function vase(options: {
+    name: string;
+    version: string;
+    vase: string;
+    dependencies?: Shard[];
+    postbuild?: string;
+}): Shard {
+    return {
+        name: options.name,
+        version: options.version,
+        src: {
+            type: "vase",
+            vase: options.vase,
+        },
+        dependencies: options.dependencies,
+        postbuild: options.postbuild,
+    };
+}
+
 export function resolveTransitiveLayers(roots: Shard[]): Shard[] {
     const sorted: Shard[] = [];
     const visited = new Set<string>();
