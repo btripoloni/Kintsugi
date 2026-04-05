@@ -1,5 +1,5 @@
 import { copy } from "jsr:@std/fs";
-import { join } from "jsr:@std/path";
+import { dirname, join } from "jsr:@std/path";
 import type { FetchUrl } from "@btripoloni/kintsugi";
 import type { SourceContext } from "./types.ts";
 
@@ -44,7 +44,7 @@ export async function executeUrl(
         const destPath = join(ctx.outputDir, fileName);
 
         if (fetcher.unpack) {
-            await unpackFile(tempFile, ctx.outputDir);
+            await unpackFile(tempFile, ctx.outputDir, fileName);
         } else {
             await Deno.mkdir(ctx.outputDir, { recursive: true });
             await copy(tempFile, destPath, { overwrite: true });
@@ -67,27 +67,92 @@ function getFileNameFromUrl(url: string): string {
     return pathParts[pathParts.length - 1] || "download";
 }
 
-async function unpackFile(source: string, destDir: string): Promise<void> {
+async function unpackFile(
+    source: string,
+    destDir: string,
+    originalFilename?: string,
+): Promise<void> {
     await Deno.mkdir(destDir, { recursive: true });
 
-    if (source.endsWith(".zip")) {
+    // Use original filename extension if provided (temp files have random names)
+    const checkName = originalFilename ?? source;
+
+    if (checkName.endsWith(".zip")) {
         await unpackZip(source, destDir);
-    } else if (source.endsWith(".tar") || source.endsWith(".tar.gz") || source.endsWith(".tgz")) {
+    } else if (checkName.endsWith(".7z")) {
+        await unpack7z(source, destDir);
+    } else if (
+        checkName.endsWith(".tar") || checkName.endsWith(".tar.gz") || checkName.endsWith(".tgz")
+    ) {
         await unpackTar(source, destDir);
     } else {
-        const fileName = source.split("/").pop() || "archive";
+        const fileName = originalFilename || source.split("/").pop() || "archive";
         await copy(source, join(destDir, fileName));
     }
 }
 
-async function unpackZip(zipPath: string, _destDir: string): Promise<void> {
-    await Deno.readFile(zipPath);
-    throw new Error("ZIP unpacking not yet implemented");
+async function unpackZip(zipPath: string, destDir: string): Promise<void> {
+    try {
+        const command = new Deno.Command("unzip", {
+            args: ["-q", "-o", zipPath, "-d", destDir],
+            stdout: "null",
+            stderr: "null",
+        });
+
+        const output = await command.output();
+        if (!output.success) {
+            throw new Error(`unzip failed with code ${output.code}`);
+        }
+    } catch (err) {
+        if (err instanceof Deno.errors.NotFound) {
+            throw new Error(
+                "unzip is not installed. Please install unzip package for zip support.",
+            );
+        }
+        throw err;
+    }
 }
 
-async function unpackTar(tarPath: string, _destDir: string): Promise<void> {
-    await Deno.readFile(tarPath);
-    throw new Error(" TAR unpacking not yet implemented");
+async function unpack7z(sevenZipPath: string, destDir: string): Promise<void> {
+    try {
+        const command = new Deno.Command("7z", {
+            args: ["x", "-y", `-o${destDir}`, sevenZipPath],
+            stdout: "null",
+            stderr: "null",
+        });
+
+        const output = await command.output();
+        if (!output.success) {
+            throw new Error(`7z failed with code ${output.code}`);
+        }
+    } catch (err) {
+        if (err instanceof Deno.errors.NotFound) {
+            throw new Error(
+                "7zip is not installed. Please install p7zip-full package for 7z support.",
+            );
+        }
+        throw err;
+    }
+}
+
+async function unpackTar(tarPath: string, destDir: string): Promise<void> {
+    try {
+        const command = new Deno.Command("tar", {
+            args: ["-xf", tarPath, "-C", destDir],
+            stdout: "null",
+            stderr: "null",
+        });
+
+        const output = await command.output();
+        if (!output.success) {
+            throw new Error(`tar failed with code ${output.code}`);
+        }
+    } catch (err) {
+        if (err instanceof Deno.errors.NotFound) {
+            throw new Error("tar command not found.");
+        }
+        throw err;
+    }
 }
 
 export function getUrlDeps(_fetcher: FetchUrl): string[] {
