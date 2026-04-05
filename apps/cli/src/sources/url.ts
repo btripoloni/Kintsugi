@@ -49,6 +49,13 @@ export async function executeUrl(
             await Deno.mkdir(ctx.outputDir, { recursive: true });
             await copy(tempFile, destPath, { overwrite: true });
         }
+
+        // Force kernel to flush all pending writes to disk
+        const sync = new Deno.Command("sync", { stdout: "null", stderr: "null" });
+        await sync.output();
+
+        // Give filesystem 100ms to settle
+        await new Promise(r => setTimeout(r, 100));
     } finally {
         await Deno.remove(tempFile, { recursive: true }).catch(() => {});
     }

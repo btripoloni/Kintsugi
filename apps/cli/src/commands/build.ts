@@ -99,6 +99,7 @@ async function buildShard(
     storeDir: string,
     recipesDir: string,
     root: string,
+    postbuild?: string,
 ): Promise<void> {
     const shardDir = join(storeDir, out);
 
@@ -117,9 +118,40 @@ async function buildShard(
 
     await executeSource(src, modlistPath, shardDir, root);
 
+    // Force kernel filesystem sync before running postbuild
+    // This ensures all files are fully written to disk and not in cache
+    const syncCmd = new Deno.Command("sync", {
+        stdout: "null",
+        stderr: "null",
+        cwd: shardDir
+    });
+    await syncCmd.output();
+    
+    // Wait for filesystem metadata to be consistent
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    if (postbuild) {
+        console.log(`Executing postbuild script for ${out}`);
+        const cmd = new Deno.Command("sh", {
+            args: ["-c", postbuild],
+            cwd: shardDir,
+            stdout: "inherit",
+            stderr: "inherit",
+        });
+        const status = await cmd.output();
+        if (!status.success) {
+            throw new Error(`Postbuild script failed for ${out}`);
+        }
+        
+        // Sync again after postbuild makes changes
+        await syncCmd.output();
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
     const recipe = {
         out,
         src,
+        postbuild,
     };
 
     await saveRecipe(recipesDir, out, recipe);
@@ -242,7 +274,7 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
     for (const drv of shards) {
         const src = drv.src as Fetcher;
         if (src.type !== "composition") {
-            await buildShard(drv.out!, src, modlistPath, storeDir, recipesDir, root);
+            await buildShard(drv.out!, src, modlistPath, storeDir, recipesDir, root, drv.postbuild);
         }
     }
 

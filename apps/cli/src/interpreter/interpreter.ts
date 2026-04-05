@@ -103,6 +103,7 @@ export async function interpretShard(
                 out: drv.out!,
                 src: srcForRecipe as any,
                 _dependencyHashes: drv._dependencyHashes,
+                postbuild: drv.postbuild,
             };
 
             await saveRecipe(recipesDir, drv.out!, recipe);

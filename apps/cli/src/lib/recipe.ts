@@ -4,4 +4,5 @@ export interface Recipe {
     out: string;
     src: Fetcher | any;
     _dependencyHashes?: string[];
+    postbuild?: string;
 }
