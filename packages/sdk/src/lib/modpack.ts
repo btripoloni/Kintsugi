@@ -1,6 +1,19 @@
 import type { BuildOptions, Shard, Source } from "../types/shard.ts";
 import { hashShard } from "./hash.ts";
 
+export interface ModlistOptions {
+    name: string;
+    version: string;
+    mods: Shard[];
+}
+
+export async function modlist(options: ModlistOptions): Promise<Shard> {
+    return compose({
+        name: options.name,
+        layers: options.mods,
+    });
+}
+
 export function resolveTransitiveLayers(roots: Shard[]): Shard[] {
     const sorted: Shard[] = [];
     const visited = new Set<string>();
