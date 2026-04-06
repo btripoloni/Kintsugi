@@ -1,4 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
+import type { FetchLocal, FetchUrl, FetchVase, WriteJson, WriteRun } from "../types/fetchers.ts";
 import { json, local, run, url, vase } from "./modpack.ts";
 
 Deno.test("Shard helpers", async (t) => {
@@ -14,9 +15,10 @@ Deno.test("Shard helpers", async (t) => {
         assertEquals(shard.name, "test-mod");
         assertEquals(shard.version, "1.0.0");
         assertEquals(shard.src.type, "url");
-        assertEquals(shard.src.url, "https://example.com/file.zip");
-        assertEquals(shard.src.sha256, "abc123");
-        assertEquals(shard.src.unpack, true);
+        const src = shard.src as FetchUrl;
+        assertEquals(src.url, "https://example.com/file.zip");
+        assertEquals(src.sha256, "abc123");
+        assertEquals(src.unpack, true);
     });
 
     await t.step("local() creates valid local shard", () => {
@@ -27,7 +29,8 @@ Deno.test("Shard helpers", async (t) => {
         });
 
         assertEquals(shard.src.type, "local");
-        assertEquals(shard.src.path, "./mods/test");
+        const src = shard.src as FetchLocal;
+        assertEquals(src.path, "./mods/test");
     });
 
     await t.step("json() creates valid write_json shard", () => {
@@ -39,8 +42,9 @@ Deno.test("Shard helpers", async (t) => {
         });
 
         assertEquals(shard.src.type, "write_json");
-        assertEquals(shard.src.path, "config.json");
-        assertEquals(shard.src.content, { enabled: true });
+        const src = shard.src as WriteJson;
+        assertEquals(src.path, "config.json");
+        assertEquals(src.content, { enabled: true });
     });
 
     await t.step("run() creates valid write_run shard", () => {
@@ -53,9 +57,10 @@ Deno.test("Shard helpers", async (t) => {
         });
 
         assertEquals(shard.src.type, "write_run");
-        assertEquals(shard.src.profile, "default");
-        assertEquals(shard.src.entrypoint, "game.exe");
-        assertEquals(shard.src.args, ["--windowed"]);
+        const src = shard.src as WriteRun;
+        assertEquals(src.profile, "default");
+        assertEquals(src.entrypoint, "game.exe");
+        assertEquals(src.args, ["--windowed"]);
     });
 
     await t.step("vase() creates valid vase shard", () => {
@@ -66,7 +71,8 @@ Deno.test("Shard helpers", async (t) => {
         });
 
         assertEquals(shard.src.type, "vase");
-        assertEquals(shard.src.vase, "skyrim-se-1.6.1170");
+        const src = shard.src as FetchVase;
+        assertEquals(src.vase, "skyrim-se-1.6.1170");
     });
 
     await t.step("all helpers accept dependencies and postbuild", () => {

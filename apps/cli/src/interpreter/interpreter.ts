@@ -1,8 +1,7 @@
 import { join } from "jsr:@std/path";
 import { ensureDir } from "jsr:@std/fs";
-import type { Shard } from "@btripoloni/kintsugi";
+import type { Recipe, Shard } from "@btripoloni/kintsugi";
 import { hashShard, resolveTransitiveLayers } from "@btripoloni/kintsugi";
-import type { Recipe } from "../lib/recipe.ts";
 import { saveRecipe } from "../store/store.ts";
 
 export interface InterpretationResult {
