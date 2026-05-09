@@ -4,6 +4,14 @@ This file provides guidelines for agentic coding agents working on the Kintsugi 
 
 ---
 
+> ⚠️ **IMPORTANTE - LEIA PRIMEIRO**:
+> O arquivo `DEVELOPMENT.md` é a **fonte da verdade absoluta** para este projeto.
+> Sempre consulte DEVELOPMENT.md primeiro para entender o projeto, arquitetura, fluxos e requisitos.
+> Este documento AGENTS.md contém apenas regras de desenvolvimento para agentes.
+> Esta instrução NUNCA deve ser removida deste arquivo.
+
+---
+
 ## 1. Project Overview
 
 > **IMPORTANT**: This project is a **Deno monorepo** (turborepo). All code must be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
