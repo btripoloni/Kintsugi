@@ -55,7 +55,7 @@ export async function executeUrl(
         await sync.output();
 
         // Give filesystem 100ms to settle
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 100));
     } finally {
         await Deno.remove(tempFile, { recursive: true }).catch(() => {});
     }

@@ -123,12 +123,12 @@ async function buildShard(
     const syncCmd = new Deno.Command("sync", {
         stdout: "null",
         stderr: "null",
-        cwd: shardDir
+        cwd: shardDir,
     });
     await syncCmd.output();
-    
+
     // Wait for filesystem metadata to be consistent
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     if (postbuild) {
         console.log(`Executing postbuild script for ${out}`);
@@ -142,10 +142,10 @@ async function buildShard(
         if (!status.success) {
             throw new Error(`Postbuild script failed for ${out}`);
         }
-        
+
         // Sync again after postbuild makes changes
         await syncCmd.output();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
     const recipe = {
