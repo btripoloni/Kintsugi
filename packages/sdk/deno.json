@@ -1,0 +1,30 @@
+{
+    "name": "@btripoloni/kintsugi",
+    "version": "0.1.0",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "imports": {
+        "@std/assert": "jsr:@std/assert@1",
+        "@std/path": "jsr:@std/path@1",
+        "@std/fs": "jsr:@std/fs@1",
+        "@std/crypto": "jsr:@std/crypto@1",
+        "@std/encoding": "jsr:@std/encoding@1"
+    },
+    "compilerOptions": {
+        "lib": ["deno.window"]
+    },
+    "fmt": {
+        "useTabs": false,
+        "lineWidth": 100,
+        "indentWidth": 4,
+        "semiColons": true,
+        "singleQuote": false,
+        "proseWrap": "preserve"
+    },
+    "lint": {
+        "rules": {
+            "tags": ["recommended"]
+        }
+    }
+}

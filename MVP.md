@@ -88,7 +88,7 @@ export default {
     url: "https://example.com/mod.zip",
     sha256: "abc123...",
   }
-} satisfies Derivation;
+} satisfies Shard;
 ```
 
 Ou com composição:
@@ -104,7 +104,7 @@ export default {
       "hash-mod1-1.0.0"
     ]
   }
-} satisfies Derivation;
+} satisfies Shard;
 ```
 
 ---

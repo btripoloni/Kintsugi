@@ -4,9 +4,17 @@ This file provides guidelines for agentic coding agents working on the Kintsugi 
 
 ---
 
+> ⚠️ **IMPORTANTE - LEIA PRIMEIRO**:
+> O arquivo `DEVELOPMENT.md` é a **fonte da verdade absoluta** para este projeto.
+> Sempre consulte DEVELOPMENT.md primeiro para entender o projeto, arquitetura, fluxos e requisitos.
+> Este documento AGENTS.md contém apenas regras de desenvolvimento para agentes.
+> Esta instrução NUNCA deve ser removida deste arquivo.
+
+---
+
 ## 1. Project Overview
 
-> **IMPORTANT**: This project is being rewritten to use **Deno and TypeScript** instead of Go. All new code must be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
+> **IMPORTANT**: This project is a **Deno monorepo** (turborepo). All code must be written in TypeScript using Deno as the runtime. Do not write Go code for new features.
 
 Kintsugi is a declarative, reproducible, and isolated modpack manager for games, inspired by Nix. Written in TypeScript/Deno, it uses Deno for both the core engine and user recipes.
 
@@ -18,22 +26,89 @@ Kintsugi is a declarative, reproducible, and isolated modpack manager for games,
 
 ### 1.2 Architecture Components
 
-| Component | Responsibility |
-|-----------|----------------|
-| **Interpreter** | Executes TypeScript expressions (`main.ts`) and generates JSON recipes |
-| **Compiler** | Reads recipes, downloads sources, mounts builds in the Store |
-| **Executor** | Orchestrates interpreter + compiler, provides CLI (`run`, `build`, etc) |
+| Component | Responsibility                                    |
+| --------- | ------------------------------------------------- |
+| **SDK**   | Library for users to create recipes in TypeScript |
+| **CLI**   | Command-line interface (run, build, init, etc)    |
 
 ### 1.3 Workflow
+
 ```
 Expression (TS) -> Recipe (JSON) -> Build (Store)
 ```
 
 ---
 
-## 2. Development Workflow
+## 2. Monorepo Architecture
 
-### 2.1 Test-Driven Development (TDD)
+> **This is a Deno Workspace monorepo.** The root `deno.json` declares a `workspace` containing all packages. The SDK and CLI live in the same repository to enable **zero-friction code sharing** — there is no reason to duplicate code between them.
+
+### 2.1 Workspace Structure
+
+```
+kintsugi/
+├── apps/
+│   └── cli/                      # CLI application (consumer)
+├── packages/
+│   └── sdk/                      # SDK library (source of truth)
+├── deno.json                     # Root workspace configuration
+└── AGENTS.md
+```
+
+### 2.2 Package Roles
+
+| Package        | Role                                                        | Distribution                            |
+| -------------- | ----------------------------------------------------------- | --------------------------------------- |
+| `packages/sdk` | **Source of truth** for types, interfaces, and shared logic | JSR as `@btripoloni/kintsugi`           |
+| `apps/cli`     | CLI application that **consumes** the SDK                   | Compiled binary for Linux distributions |
+
+### 2.3 Code Sharing Rules
+
+**These rules are mandatory:**
+
+1. **The SDK is the single source of truth** for all types, interfaces, utilities, and logic that could be used by more than one package
+2. **The CLI must never duplicate code from the SDK** — if the CLI needs something the SDK already provides, import it via `@btripoloni/kintsugi`
+3. **If new shared logic is needed, add it to the SDK first**, then import from the CLI
+4. **The CLI may only contain**: CLI-specific commands, argument parsing, user interaction, and glue code that orchestrates SDK primitives
+5. **No file copies** — if a file exists in both `packages/sdk/src/` and `apps/cli/src/`, it is a bug. Delete the CLI copy and import from the SDK
+
+### 2.4 Rationale
+
+The SDK and CLI are in the same repository so they can share code **without publishing**. During development, the workspace resolves `@btripoloni/kintsugi` to the local SDK source. For distribution, the SDK is published to JSR and the CLI is compiled into a standalone binary for Linux.
+
+---
+
+## 3. Monorepo Directory Structure
+
+```
+kintsugi/
+├── apps/
+│   └── cli/                      # CLI application
+│       ├── src/
+│       │   ├── main.ts           # Entry point
+│       │   ├── commands/        # CLI commands
+│       │   ├── interpreter/     # Interprets main.ts to recipes
+│       │   ├── executor/        # Execution with OverlayFS
+│       │   ├── sources/         # Source fetchers (url, local, etc)
+│       │   ├── store/           # Recipe and Vase management
+│       │   └── tests/           # CLI tests
+│       └── deno.json            # CLI configuration
+├── packages/
+│   └── sdk/                      # SDK for users to create recipes
+│       ├── src/
+│       │   ├── types/            # TypeScript types (Shard, Source, etc)
+│       │   ├── lib/             # Helpers (compose, resolveTransitiveLayers, hash)
+│       │   └── index.ts          # SDK exports
+│       └── deno.json            # SDK configuration
+├── deno.json                    # Root workspace configuration
+└── AGENTS.md                    # This file
+```
+
+---
+
+## 4. Development Workflow
+
+### 3.1 Test-Driven Development (TDD)
 
 **This is mandatory for all implementations.**
 
@@ -63,7 +138,7 @@ Deno.test("FeatureName", async (t) => {
 });
 ```
 
-### 2.2 Branch Strategy
+### 3.2 Branch Strategy
 
 - **Always create a new branch** for each feature, fix, or enhancement
 - Branch naming convention: `feature/<name>`, `fix/<name>`, or `refactor/<name>`
@@ -71,7 +146,7 @@ Deno.test("FeatureName", async (t) => {
 - **Do not make any commits before user reviews the code**
 - Use Pull Requests for code review before merging
 
-### 2.3 Start Simple, Iterate
+### 3.3 Start Simple, Iterate
 
 - Begin with minimal implementation
 - Add complexity only when needed
@@ -80,171 +155,208 @@ Deno.test("FeatureName", async (t) => {
 
 ---
 
-## 3. Running the Application
+## 5. Running the Application
+
+### CLI
 
 ```bash
-# Run the CLI
-deno run --allow-all ./src/cli/main.ts <command>
+# Run from apps/cli
+deno run --allow-all ./apps/cli/src/main.ts <command>
 
-# Run in watch mode during development
-deno run --watch --allow-all ./src/cli/main.ts <command>
+# Or use the task
+deno task -A ./apps/cli start <command>
+```
+
+### SDK
+
+The SDK is published to JSR as `@btripoloni/kintsugi`. Users import it in their modlists:
+
+```typescript
+import { Shard, Source } from "@btripoloni/kintsugi";
 ```
 
 ---
 
-## 4. Running Tests
+## 6. Running Tests
 
 ```bash
 # Run all tests
-deno test ./src/
+deno test ./apps/cli/
+deno test ./packages/sdk/
 
-# Run tests for a specific module
-deno test ./src/cli/
+# Run tests for a specific package
+deno test ./packages/sdk/src/lib/
 
 # Run a single test
-deno test --filter "TestCommandName" ./src/
+deno test --filter "TestName" ./
 
 # Run tests with verbose output
-deno test -v ./src/
+deno test -v ./
 ```
 
 ---
 
-## 5. Code Style Guidelines
+## 7. Code Style Guidelines
 
-### 5.1 General Principles
+### 6.1 General Principles
 
 - Use modern TypeScript and Deno features
 - Keep code simple and readable
 - No unnecessary comments (unless explaining complex logic)
 - Follow standard TypeScript conventions
 
-### 5.2 Naming Conventions
+### 6.2 Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Files | kebab-case | `copy_test.ts`, `action.ts` |
-| Types/Interfaces | PascalCase | `Action`, `Step`, `Store` |
-| Functions/Methods | camelCase | `newStore`, `execute` |
-| Variables/Constants | camelCase | `modlistPath`, `isValid` |
-| Acronyms | Keep original | `URL`, not `Url` |
+| Type                | Convention    | Example                     |
+| ------------------- | ------------- | --------------------------- |
+| Files               | kebab-case    | `copy_test.ts`, `action.ts` |
+| Packages            | kebab-case    | `kintsugi-cli`, `kintsugi`  |
+| Types/Interfaces    | PascalCase    | `Action`, `Step`, `Store`   |
+| Functions/Methods   | camelCase     | `newStore`, `execute`       |
+| Variables/Constants | camelCase     | `modlistPath`, `isValid`    |
+| Acronyms            | Keep original | `URL`, not `Url`            |
 
-### 5.3 Formatting
+### 6.3 Formatting
 
 - Use `deno fmt` before submitting
 - Use 4-space indentation
 - Keep lines under 100 characters when reasonable
-- Group imports: stdlib, then external packages
+- Group imports: stdlib, then external packages, then internal
 
-### 5.4 Import Organization
+### 6.4 Import Organization
 
 ```typescript
+// stdlib
 import { assertEquals } from "jsr:@std/assert";
 import { join } from "jsr:@std/path";
-import { Context } from "./context.ts";
-import { Store } from "./store.ts";
+
+// external packages
+import { something } from "npm:some-package";
+
+// internal (SDK)
+import { Shard, Source } from "@btripoloni/kintsugi";
 ```
 
-### 5.5 Error Handling
+### 6.5 Error Handling
 
 - Use `new Error()` with descriptive message strings
 - Return errors early, avoid deep nesting
 - Handle errors at the appropriate level
 
-```typescript
-async function fetchData(ctx: Context): Promise<Data> {
-    const data = await fetchFromStore(ctx);
-    if (!data) {
-        throw new Error("failed to fetch data");
+---
+
+## 8. Package Configuration
+
+### SDK (packages/sdk/deno.json)
+
+```json
+{
+    "name": "@btripoloni/kintsugi",
+    "exports": {
+        ".": "./src/index.ts"
     }
-    // ... rest of function
+}
+```
+
+### CLI (apps/cli/deno.json)
+
+```json
+{
+    "name": "@btripoloni/kintsugi-cli",
+    "tasks": {
+        "start": "deno run -A src/main.ts",
+        "dev": "deno run -A --watch src/main.ts"
+    },
+    "imports": {
+        "@btripoloni/kintsugi": "jsr:@btripoloni/kintsugi"
+    }
 }
 ```
 
 ---
 
-## 6. Project Structure
+## 9. Key Interfaces
 
-```
-kintsugi/
-├── src/
-│   ├── cli/                      # CLI application
-│   │   ├── main.ts               # Entry point
-│   │   ├── commands/             # CLI commands
-│   │   │   ├── init.ts
-│   │   │   ├── compile.ts
-│   │   │   └── run.ts
-│   │   └── tests/
-│   ├── interpreter/              # Interpreter (executes main.ts)
-│   │   └── src/
-│   │       ├── types/
-│   │       │   ├── derivation.ts  # Derivation, BuildOptions types
-│   │       │   ├── source.ts      # Source types
-│   │       │   └── environment.ts # Execution types
-│   │       └── lib/
-│   │           ├── modpack.ts    # Dependency resolution
-│   │           ├── hash.ts       # Hash generation
-│   │           └── environment.ts
-│   ├── compiler/                  # Compiler (builds from recipes)
-│   │   └── src/
-│   │       ├── sources/          # Source implementations
-│   │       │   ├── url.ts
-│   │       │   ├── local.ts
-│   │       │   ├── json.ts
-│   │       │   └── composition.ts
-│   │       ├── store/            # Store management
-│   │       │   └── store.ts
-│   │       └── types/
-│   │           ├── recipe.ts
-│   │           └── fetchers.ts
-│   └── core/                      # Shared core
-│       └── executor/
-│           └── executor.ts       # Execution with OverlayFS
-├── docs/                          # Documentation
-├── DEVELOPMENT.md                 # Development reference (this is YOUR reference)
-└── AGENTS.md                     # This file
-```
-
----
-
-## 7. Key Interfaces
-
-### 7.1 Derivation
+### 9.1 Shard
 
 ```typescript
-interface Derivation {
-  name: string;           // Descriptive name (e.g., "skyrim-se")
-  version: string;        // Version (e.g., "1.6.1170")
-  out: string;           // Output: "[hash]-[name]-[version]"
-  src: Source;           // Source type
-  dependencies?: string[]; // List of recipe names (format: "[hash]-[name]-[version]")
-  postbuild?: string;    // Shell script executed after source acquisition
+interface Shard {
+    name: string; // Descriptive name (e.g., "skyrim-se")
+    version: string; // Version (e.g., "1.6.1170")
+    out?: string; // Output: "[hash]-[name]-[version]"
+    src: Source; // Source type
+    dependencies?: Shard[]; // Full Shard objects (used when compose() returns)
+    _dependencyHashes?: string[]; // List of recipe hashes (format: "[hash]-[name]-[version]")
+    postbuild?: string; // Shell script executed after source acquisition
 }
 ```
 
-### 7.2 Source Types
+### 9.2 Source Types
 
-| Type | Description | Key Parameters |
-|------|-------------|----------------|
-| `url` | Download from remote URL | `url`, `sha256`, `unpack?`, `method?`, `headers?` |
-| `local` | Copy from local filesystem | `path` |
-| `write_json` | Create JSON file | `path`, `content` |
-| `vase` | Import from Vase collection | `vase` |
-| `composition` | Compose multiple shards | `layers` |
+| Type          | Description                 | Key Parameters                                    |
+| ------------- | --------------------------- | ------------------------------------------------- |
+| `url`         | Download from remote URL    | `url`, `sha256`, `unpack?`, `method?`, `headers?` |
+| `local`       | Copy from local filesystem  | `path`                                            |
+| `write_json`  | Create JSON file            | `path`, `content`                                 |
+| `vase`        | Import from Vase collection | `vase`                                            |
+| `composition` | Compose multiple shards     | `layers` (strings or Shard objects)               |
+| `write_run`   | Create execution manifest   | `profile`, `entrypoint`, `args?`, `env?`          |
 
-### 7.3 Recipe
+### 9.3 Recipe
 
 ```typescript
 interface Recipe {
-  out: string;           // "[hash]-[name]-[version]"
-  src: Fetcher;          // Source type
-  dependencies?: string[]; // Recipe names this depends on
+    out: string; // "[hash]-[name]-[version]"
+    src: Fetcher; // Source type
+    _dependencyHashes?: string[]; // Recipe hashes this depends on
 }
 ```
 
+### 9.4 Build Flow (`kintsugi build`)
+
+O fluxo de build segue estas etapas:
+
+```
+main.ts (Shard) -> interpretModlist -> interpretShard -> shards[] + recipes JSON
+                                                    |
+                                                    v
+                                            buildCommand
+                                                    |
+                    +-------------------------------+-------------------------------+
+                    |                               |                               |
+              buildShard (non-composition)    buildComposition (composition)    symlink active
+                    |                               |                               |
+              executeSource                   copy layers from store         -> ~/.kintsugi/modlists/<name>/active
+        (vase, url, local, etc)               to composition dir
+```
+
+**Interpreter (`interpretShard`):**
+
+1. Recebe um `Shard` do `main.ts` (pode vir de `compose()`)
+2. Se `src.type === "composition"`:
+   - Se `src.layers` contém objetos Shard: usa-os diretamente
+   - Se `src.layers` contém strings (hashes): usa `shard.dependencies` para obter os objetos Shard completos
+3. Chama `resolveTransitiveLayers([shard, ...dependencies])` para ordenar topologicamente
+4. Para cada shard: se já tem `out`, preserva; senão, chama `hashShard` do SDK
+5. Cria arquivos de receita JSON no `recipesDir`
+6. Retorna `{ shards: Shard[], rootOut: string }`
+
+**Build Command (`buildCommand`):**
+
+1. Chama `interpretModlist` para obter shards e rootOut
+2. Para cada shard non-composition: chama `buildShard` que executa `executeSource` (vase, url, local, etc)
+3. Para o shard composition: chama `buildComposition` que copia layers do store para o dir da composição
+4. Cria symlink `~/.kintsugi/modlists/<name>/active` apontando para a composição final
+
+**Importante sobre `compose()` + `build`:**
+
+- `compose()` retorna um `Shard` com `src.layers` como strings (hashes) e `dependencies` como array de `Shard[]` completos
+- O interpreter DEVE usar `shard.dependencies` quando `src.layers` são strings para processar cada dependência como receita individual
+- Sem isso, as dependências (ex: vases) nunca são criadas no store e a composição fica vazia
+
 ---
 
-## 8. Testing Conventions
+## 10. Testing Conventions
 
 - Test files: `*_test.ts` in the same directory as the implementation
 - Test functions: `Deno.test("name", async (t) => { ... })`
@@ -273,23 +385,31 @@ Deno.test("FeatureName", async (t) => {
 
 ---
 
-## 9. Linting and Verification
+## 11. Linting and Verification
 
 **Always run these before submitting:**
 
 ```bash
-deno check ./src/
-deno fmt ./src/
-deno test ./src/
+# Check a specific package
+deno check ./apps/cli/
+deno check ./packages/sdk/
+
+# Format code
+deno fmt ./apps/cli/
+deno fmt ./packages/sdk/
+
+# Run tests
+deno test ./apps/cli/
+deno test ./packages/sdk/
 ```
 
 ---
 
-## 10. Module Guidelines
+## 12. Module Guidelines
 
 - Each module should have a focused responsibility
 - Use interfaces to define contracts
-- Export only what's necessary
+- Export only what's necessary from the SDK
 - Use factory functions like `createXxx()` or `newXxx()` for construction
 
 ### Store Usage Pattern
@@ -305,47 +425,37 @@ try {
 
 ### Paths Module
 
-Use `src/core/paths.ts` for handling Kintsugi root path. Never hardcode `.kintsugi` - always use the centralized function:
+Use `getKintsugiRoot()` from CLI for handling Kintsugi root path (internal to CLI):
 
 ```typescript
-import { getKintsugiRoot } from "../../core/paths.ts";
+import { getKintsugiRoot } from "./paths.ts";
 
 // Returns ~/.kintsugi by default, or custom path via KINTSUGI_ROOT env var or --root flag
 const root = getKintsugiRoot();
 ```
 
-The function resolves paths in this order:
-1. Custom root argument (if provided)
-2. `KINTSUGI_ROOT` environment variable
-3. `~/.kintsugi` (from HOME environment variable)
-
 ---
 
-## 11. Prerequisites
+## 13. Prerequisites
 
 - Deno 2.0 or higher
 - fuse-overlayfs (for modpack execution via OverlayFS)
 
 ---
 
-## 12. Your Reference: DEVELOPMENT.md
+## 14. Publishing the SDK
 
-The `DEVELOPMENT.md` file in the root directory contains comprehensive information about:
+The SDK is published to JSR:
 
-- Project architecture and components
-- CLI commands and usage
-- Source types and parameters
-- Interpretador and Compiler workflows
-- Execution (Run) with OverlayFS
-- Vases and Garbage Collection
-- Build and Rollback mechanisms
-- Technical details (hashing, etc.)
-
-**Always consult DEVELOPMENT.md when implementing features.**
+```bash
+# Publish SDK
+cd packages/sdk
+deno publish
+```
 
 ---
 
-## 13. Important Notes
+## 15. Important Notes
 
 1. The codebase is AI-generated - expect inconsistencies and be willing to refactor
 2. Always write tests first (TDD)
@@ -354,3 +464,4 @@ The `DEVELOPMENT.md` file in the root directory contains comprehensive informati
 5. Keep iterations small and simple
 6. Use Deno for all runtime operations
 7. Test files use Deno's built-in test framework
+8. Always import from `@btripoloni/kintsugi` in CLI code (not relative paths to SDK source)

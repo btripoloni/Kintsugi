@@ -5,19 +5,21 @@
 **Kintsugi** é um gerenciador de modlists declarativo, reproduzível e isolado para jogos, inspirado no Nix. Escrito em TypeScript usando Deno como runtime.
 
 ### 1.1 Princípios Fundamentais
+
 - **Declarativo**: Você descreve o estado final desejado, o Kintsugi se encarrega de alcançá-lo
 - **Reproduzível**: Uma build é uma função pura de suas entradas - qualquer pessoa produz instalação idêntica
 - **Isolado**: Cada build é autocontida e imutável no "Store", permitindo múltiplas versões e rollbacks
 
 ### 1.2 Componentes Principais
 
-| Componente | Responsabilidade |
-|------------|-------------------|
-| **Interpretador** | Executa expressões TypeScript (`main.ts`) e gera receitas JSON |
-| **Compilador** | Lê receitas, baixa fontes, monta builds no Store |
-| **Executor** | Orquestra interpretador + compilador, fornece CLI (`run`, `build`, etc) |
+| Componente     | Responsabilidade                                                       |
+| -------------- | ---------------------------------------------------------------------- |
+| **SDK**        | Tipos e helpers para usuários criarem recipes em TypeScript            |
+| **CLI**        | Interpretador, compilador, executor - toda a lógica do Kintsugi        |
+| **Manifestos** | Configuração de ambiente e perfis de execução dentro do `modlist.json` |
 
 ### 1.3 Fluxo de Trabalho
+
 ```
 Expressão (TS) -> Receita (JSON) -> Build (Store)
 ```
@@ -26,26 +28,77 @@ Expressão (TS) -> Receita (JSON) -> Build (Store)
 
 ## 2. Estrutura de Diretórios
 
-### 2.1 Diretório do Kintsugi (`~/.kintsugi/`)
+### 2.1 Estrutura do Monorepo
+
 ```
-~/.kintsugi/
-├── modlists/      # Modlists do usuário (cada uma com main.ts, deno.json)
-├── vases/         # Assets grandes/imutáveis (jogos base)
-└── store/         # Shards construídos e receitas
-    ├── [hash]-[nome]-[versão]/   # Shards individuais
-    ├── recipes/                   # Arquivos de receita JSON
-    │   └── [hash]-[nome]-[versão].json
-    └── compositions/              # Composições montadas
+kintsugi/
+├── apps/
+│   └── cli/                       # CLI do Kintsugi
+│       ├── src/
+│       │   ├── main.ts            # Entry point
+│       │   ├── commands/          # Comandos CLI
+│       │   ├── interpreter/       # Interpretador de main.ts
+│       │   ├── executor/          # Execução com OverlayFS
+│       │   ├── sources/           # Implementação das Sources
+│       │   ├── store/             # Gerenciamento de recipes e vases
+│       │   ├── lib/               # Biblioteca core (hash, modpack)
+│       │   └── tests/             # Testes do CLI
+│       └── deno.json              # Configuração do pacote
+├── packages/
+│   └── sdk/                        # SDK (biblioteca para usuários)
+│       ├── src/
+│       │   ├── types/             # Tipos TypeScript (Shard, Source)
+│       │   ├── lib/              # Helpers (compose, resolveTransitiveLayers)
+│       │   └── index.ts          # Exports do SDK
+│       └── deno.json              # Configuração do pacote
+├── deno.json                      # Configuração global
+└── DEVELOPMENT.md                 # Este arquivo
 ```
 
+kintsugi/
+├── apps/
+│ └── cli/ # CLI do Kintsugi
+│ ├── src/
+│ │ ├── main.ts # Entry point
+│ │ ├── commands/ # Comandos CLI
+│ │ └── tests/ # Testes do CLI
+│ └── deno.json # Configuração do pacote
+├── packages/
+│ └── sdk/ # SDK (biblioteca para usuários)
+│ ├── src/
+│ │ ├── types/ # Tipos TypeScript
+│ │ ├── lib/ # Biblioteca core
+│ │ ├── interpreter/ # Interpretador de main.ts
+│ │ ├── compiler/ # Compilador de receitas
+│ │ ├── executor/ # Execução com OverlayFS
+│ │ └── index.ts # Exports do SDK
+│ └── deno.json # Configuração do pacote
+├── deno.json # Configuração global
+└── DEVELOPMENT.md # Este arquivo
+
+```
+### 2.2 Diretório do Kintsugi (`~/.kintsugi/`)
+```
+
+~/.kintsugi/
+├── modlists/ # Modlists do usuário (cada uma com main.ts, deno.json)
+├── vases/ # Assets grandes/imutáveis (jogos base)
+└── store/ # Shards construídos e receitas
+├── [hash]-[nome]-[versão]/ # Shards individuais
+├── recipes/ # Arquivos de receita JSON
+│ └── [hash]-[nome]-[versão].json
+└── compositions/ # Composições montadas
+
+```
 ### 2.2 Estrutura de uma Modlist
 ```
-meu-modlist/
-├── modlist.json    # Metadados (apenas nome por enquanto)
-├── main.ts         # Definição da modlist (TypeScript)
-└── deno.json       # Configuração Deno (imports opcionais)
-```
 
+meu-modlist/
+├── modlist.json # Metadados e configuração de ambiente
+├── main.ts # Definição da modlist (TypeScript)
+└── deno.json # Configuração Deno (imports opcionais)
+
+```
 ---
 
 ## 3. Interface da Linha de Comando (CLI)
@@ -75,26 +128,31 @@ Estas são chamadas internamente pelo `build`, não são comandos diretos:
 
 **init:**
 ```
-kintsugi init <name> [--force]
-```
 
+kintsugi init <name> [--force]
+
+```
 **build:** (executa dentro da pasta da modlist)
 ```
-kintsugi build
-```
 
+kintsugi build
+
+```
 **run:**
 ```
-kintsugi run <modlist-name> [profile] [--root <kintsugi-root>]
-# Exemplo: kintsugi run skyrim default
-```
 
+kintsugi run <modlist-name> [profile] [--root <kintsugi-root>]
+
+# Exemplo: kintsugi run skyrim default
+
+```
 **gc:**
 ```
-kintsugi gc --dry-run    # Simula, não apaga nada
-kintsugi gc              # Executa cleanup
-```
 
+kintsugi gc --dry-run # Simula, não apaga nada
+kintsugi gc # Executa cleanup
+
+````
 ---
 
 ## 4. O Arquivo main.ts
@@ -104,7 +162,7 @@ kintsugi gc              # Executa cleanup
 O `main.ts` deve exportar um objeto que representa a modlist. A estrutura é:
 
 ```typescript
-interface Derivation {
+interface Shard {
   name: string;           // Nome descritivo (ex: "skyrim-se")
   version: string;        // Versão (ex: "1.6.1170")
   out: string;           // Output hash format: "[hash]-[name]-[version]"
@@ -112,26 +170,28 @@ interface Derivation {
   dependencies?: string[]; // Lista de nomes de receitas (formato: "[hash]-[nome]-[versão]")
   postbuild?: string;     // Script shell executado após aquisição da source
 }
-```
+````
 
 ### 4.2 Tipos de Source (src)
 
 Cada Source define como o conteúdo inicial é adquirido ou gerado. O Kintsugi utiliza um sistema modular de Fontes.
 
 #### 4.2.1 Source: URL
+
 Baixa um arquivo ou pacote de uma URL remota.
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `url` | string | Sim | A URL para o download |
-| `sha256` | string | Sim | Hash SHA256 para verificação de integridade |
-| `unpack` | boolean | Não | Descompacta automaticamente se for `.zip`, `.tar`, etc. |
-| `method` | `"GET" \| "POST"` | Não | Método HTTP (padrão: GET) |
-| `headers` | `Record<string, string>` | Não | Headers HTTP personalizados |
-| `cookies` | `Record<string, string>` | Não | Cookies para autenticação |
-| `body` | string | Não | Corpo da requisição (para POST) |
+| Parâmetro | Tipo                     | Obrigatório | Descrição                                               |
+| --------- | ------------------------ | ----------- | ------------------------------------------------------- |
+| `url`     | string                   | Sim         | A URL para o download                                   |
+| `sha256`  | string                   | Sim         | Hash SHA256 para verificação de integridade             |
+| `unpack`  | boolean                  | Não         | Descompacta automaticamente se for `.zip`, `.tar`, etc. |
+| `method`  | `"GET" \| "POST"`        | Não         | Método HTTP (padrão: GET)                               |
+| `headers` | `Record<string, string>` | Não         | Headers HTTP personalizados                             |
+| `cookies` | `Record<string, string>` | Não         | Cookies para autenticação                               |
+| `body`    | string                   | Não         | Corpo da requisição (para POST)                         |
 
 **Exemplo:**
+
 ```typescript
 {
   type: "url",
@@ -142,15 +202,17 @@ Baixa um arquivo ou pacote de uma URL remota.
 ```
 
 #### 4.2.2 Source: Local
+
 Importa arquivos ou diretórios do sistema de arquivos local.
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `path` | string | Sim | Caminho para o arquivo ou diretório, relativo à raiz do modlist |
+| Parâmetro | Tipo   | Obrigatório | Descrição                                                       |
+| --------- | ------ | ----------- | --------------------------------------------------------------- |
+| `path`    | string | Sim         | Caminho para o arquivo ou diretório, relativo à raiz do modlist |
 
 **Nota:** O arquivo em `path` é copiado para a raiz da pasta de output da compilação.
 
 **Exemplo:**
+
 ```typescript
 {
   type: "local",
@@ -159,14 +221,16 @@ Importa arquivos ou diretórios do sistema de arquivos local.
 ```
 
 #### 4.2.3 Source: Write JSON
+
 Serializa um objeto para um arquivo `.json`.
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `path` | string | Sim | Nome do arquivo (ex: `"config"`) |
-| `content` | any | Sim | Objeto serializável |
+| Parâmetro | Tipo   | Obrigatório | Descrição                        |
+| --------- | ------ | ----------- | -------------------------------- |
+| `path`    | string | Sim         | Nome do arquivo (ex: `"config"`) |
+| `content` | any    | Sim         | Objeto serializável              |
 
 **Exemplo:**
+
 ```typescript
 {
   type: "write_json",
@@ -182,13 +246,15 @@ Serializa um objeto para um arquivo `.json`.
 ```
 
 #### 4.2.4 Source: Vase
+
 Importa conteúdo de uma coleção global Vase (arquivos grandes pré-existentes).
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `vase` | string | Sim | Nome do Vase registrado (ex: `"skyrim-assets"`) |
+| Parâmetro | Tipo   | Obrigatório | Descrição                                       |
+| --------- | ------ | ----------- | ----------------------------------------------- |
+| `vase`    | string | Sim         | Nome do Vase registrado (ex: `"skyrim-assets"`) |
 
 **Exemplo:**
+
 ```typescript
 {
   type: "vase",
@@ -196,16 +262,41 @@ Importa conteúdo de uma coleção global Vase (arquivos grandes pré-existentes
 }
 ```
 
-#### 4.2.5 Source: Composition
+#### 4.2.5 Source: Write Run
+
+Cria automaticamente um manifesto de execução em `kintsugi/exec/<profile>.run.json`.
+
+| Parâmetro    | Tipo                   | Obrigatório | Descrição                                                |
+| ------------ | ---------------------- | ----------- | -------------------------------------------------------- |
+| `profile`    | string                 | Sim         | Nome do perfil de execução (ex: `"default"`, `"editor"`) |
+| `entrypoint` | string                 | Sim         | Caminho do executável dentro da composição               |
+| `args`       | string[]               | Não         | Argumentos para o executável                             |
+| `env`        | Record<string, string> | Não         | Variáveis de ambiente                                    |
+
+**Exemplo:**
+
+```typescript
+{
+  type: "write_run",
+  profile: "default",
+  entrypoint: "skse64_loader.exe",
+  args: ["-high"],
+  env: { GAME_SAVE_DIR: "/saves" }
+}
+```
+
+#### 4.2.6 Source: Composition
+
 Compõe múltiplos shards em camadas para formar uma modlist.
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `layers` | string[] | Sim | Lista de nomes de receitas em ordem de montagem |
+| Parâmetro | Tipo     | Obrigatório | Descrição                                       |
+| --------- | -------- | ----------- | ----------------------------------------------- |
+| `layers`  | string[] | Sim         | Lista de nomes de receitas em ordem de montagem |
 
 **Nota:** A ordem das camadas define a prioridade. O último layer sobrescreve arquivos anteriores em caso de conflito.
 
 **Exemplo:**
+
 ```typescript
 {
   type: "composition",
@@ -221,18 +312,18 @@ Compõe múltiplos shards em camadas para formar uma modlist.
 
 ```typescript
 export default {
-  name: "meu-modlist",
-  version: "1.0.0",
-  out: "./output",
-  src: {
-    type: "composition",
-    layers: [
-      "87d173fde2a310f689e131926624283b-skyrimse-1.16.1170",
-      "aa322c36a09e696d40f84215bdb8770e-run-spec-launcher-1.0.0",
-      "0841c53c2c1377ecdcd5e68ef52c7ac4-skse-2.2.6",
-    ]
-  }
-} satisfies Derivation;
+    name: "meu-modlist",
+    version: "1.0.0",
+    out: "./output",
+    src: {
+        type: "composition",
+        layers: [
+            "87d173fde2a310f689e131926624283b-skyrimse-1.16.1170",
+            "aa322c36a09e696d40f84215bdb8770e-run-spec-launcher-1.0.0",
+            "0841c53c2c1377ecdcd5e68ef52c7ac4-skse-2.2.6",
+        ],
+    },
+} satisfies Shard;
 ```
 
 ---
@@ -240,10 +331,12 @@ export default {
 ## 5. O Interpretador
 
 ### 5.1 Responsabilidade
-Executar o `main.ts` e transformar o resultado em arquivos de receita JSON individuais para cada derivation.
+
+Executar o `main.ts` e transformar o resultado em arquivos de receita JSON individuais para cada shard.
 
 ### 5.2 Entrada do Interpretador
-O interpretador recebe um objeto `Derivation` que pode conter composition com layers como objetos Derivation (não só strings):
+
+O interpretador recebe um objeto `Shard` que pode conter composition com layers como objetos Shard (não só strings):
 
 ```typescript
 interface CompositionLayer {
@@ -251,28 +344,30 @@ interface CompositionLayer {
     version: string;
     src: Source;
     dependencies?: string[];
-    deps?: Derivation[];
+    deps?: Shard[];
 }
 
 interface Composition {
     type: "composition";
-    layers: (string | Derivation)[];  // Pode ser Derivation ou string (hash)
+    layers: (string | Shard)[]; // Pode ser Shard ou string (hash)
 }
 ```
 
 ### 5.3 Fluxo
-1. Recebe objeto Derivation do main.ts
-2. Se a source for composition com layers como objetos Derivation:
+
+1. Recebe objeto Shard do main.ts
+2. Se a source for composition com layers como objetos Shard:
    - Resolve dependências transicionalmente (ordenação topológica)
-   - Para cada derivation (incluindo as dos layers), gera hash SHA-256
+   - Para cada shard (incluindo as dos layers), gera hash SHA-256
    - Salva arquivo individual por receita em `~/.kintsugi/store/recipes/[hash]-[nome]-[versão].json`
-   - Substitui os objetos Derivation nos layers por suas strings de hash
+   - Substitui os objetos Shard nos layers por suas strings de hash
 3. Se a source for outro tipo:
-   - Gera hash da derivation
+   - Gera hash do shard
    - Salva receita individual
 4. Retorna lista de todos os `out` (hashes) das receitas geradas
 
 ### 5.4 Saída do Interpretador
+
 Cada arquivo de receita individual salvo em `store/recipes/[hash]-[nome]-[versão].json`:
 
 ```json
@@ -290,9 +385,11 @@ A função principal retorna a lista de todos os `out` gerados.
 ## 6. O Compilador
 
 ### 6.1 Responsabilidade
+
 Ler receitas e produzir entradas no Store (shards construídos).
 
 ### 6.2 Características
+
 - **Agnóstico ao jogo**: Não sabe o que é Skyrim, Minecraft, etc
 - **Determinístico**: Mesma receita = mesmo resultado
 - **Apenas segue instruções**: Baixa arquivos, copia, cria links, executa scripts
@@ -323,8 +420,9 @@ store/
 ### 6.5 Nome das Entradas
 
 O formato é sempre: `[sha256-32chars]-[nome]-[versão]`
+
 - Hash truncado para 32 caracteres para legibilidade
-- Nome e versão definidos na Derivation
+- Nome e versão definidos no Shard
 
 ---
 
@@ -352,24 +450,25 @@ O Executor usa **OverlayFS** (via fuse-overlayfs) para permitir escrita em ambie
 
 ### 7.3 Artefatos de Execução
 
-Cada composição contém `kintsugi/exec/[profile].run.json`:
+Os manifestos de execução são criados usando a source `write_run` diretamente no `main.ts` da modlist.
+Durante o build eles são gerados automaticamente dentro da composição em `kintsugi/exec/[profile].run.json`:
 
 ```json
 {
-  "name": "default",
-  "entrypoint": "skse64_loader.exe",
-  "umu": { "version": "GE-Proton9-4", "id": "489830" },
-  "args": ["-high"],
-  "env": {}
+    "name": "default",
+    "entrypoint": "skse64_loader.exe",
+    "umu": { "version": "GE-Proton9-4", "id": "489830" },
+    "args": ["-high"],
+    "env": {}
 }
 ```
 
 ### 7.4 Estratégias de Execução
 
-| Tipo | Descrição |
-|------|------------|
-| **Nativo** | Executa binário Linux diretamente |
-| **UMU** | Usa UMU-Launcher (Proton/Wine) para jogos Windows |
+| Tipo       | Descrição                                         |
+| ---------- | ------------------------------------------------- |
+| **Nativo** | Executa binário Linux diretamente                 |
+| **UMU**    | Usa UMU-Launcher (Proton/Wine) para jogos Windows |
 
 ### 7.5 Variáveis de Ambiente Exportadas
 
@@ -382,15 +481,16 @@ Cada composição contém `kintsugi/exec/[profile].run.json`:
 ## 8. Vases
 
 ### 8.1 Conceito
+
 Containers para arquivos grandes e imutáveis (ex: instalação de jogo). Usam **hard links** em vez de cópia, economizando espaço.
 
 ### 8.2 Diferença para Shards
 
-| Aspecto | Shard | Vase |
-|--------|-------|------|
-| Processo | Build (download, patch, etc) | Pré-existente |
-| Usage typical | Mods, configurações | Jogos base |
-| Criação | Automático via receita | Manual via CLI |
+| Aspecto       | Shard                        | Vase           |
+| ------------- | ---------------------------- | -------------- |
+| Processo      | Build (download, patch, etc) | Pré-existente  |
+| Usage typical | Mods, configurações          | Jogos base     |
+| Criação       | Automático via receita       | Manual via CLI |
 
 ### 8.3 Comandos
 
@@ -403,18 +503,23 @@ kintsugi vase list
 ### 8.4 Regras de Negócio
 
 #### 8.4.1 Nomenclatura Automática
+
 Vases criados com nome base "skyrim" recebem sufixo numérico automático:
+
 - Primeiro "skyrim" → "skyrim-1"
 - Segundo "skyrim" → "skyrim-2"
 - E assim sucessivamente
 
 #### 8.4.2 Armazenamento
+
 Vases são armazenados em `~/.kintsugi/vases/<name>/` (diferente de store/ e recipes/).
 
 #### 8.4.3 Comportamento do Fetcher
+
 Ao usar um vase em uma receita, cada ARQUIVO é linkado individualmente para o output, mantendo a estrutura de diretórios original. O vase em si nunca é linkado como um todo.
 
 #### 8.4.4 Hardlinks
+
 - Cópia de pasta inteira via hardlinks arquivo por arquivo
 - Preserva estrutura de diretórios
 - Erros AlreadyExists removem e recriam o link (mesmo padrão de composition.ts)
@@ -424,6 +529,7 @@ Ao usar um vase em uma receita, cada ARQUIVO é linkado individualmente para o o
 ## 9. Garbage Collector
 
 ### 9.1 Responsabilidade
+
 Remover shards, receitas e builds não utilizados para liberar espaço.
 
 ### 9.2 O que é considerado "lixo"
@@ -444,12 +550,15 @@ kintsugi gc           # Executa cleanup
 ## 10. Build e Rollback
 
 ### 10.1 Builds
+
 Cada execução de `kintsugi build` cria uma nova build:
+
 - Mantém histórico de todas as builds
 - Permite rollback para versão anterior
 - Permite testar mudanças sem perder configuração atual
 
 ### 10.2 Rollback
+
 Muda o link simbólico `active` para apontar para build anterior.
 
 ---
@@ -457,12 +566,14 @@ Muda o link simbólico `active` para apontar para build anterior.
 ## 11. Detalhes Técnicos
 
 ### 11.1 Hash Generation
+
 - Algoritmo: SHA-256
 - Comprimento: 32 caracteres (truncado)
-- Baseado no objeto Derivation serializado
+- Baseado no objeto Shard serializado
 - Chaves ordenadas recursivamente antes de serializar
 
 ### 11.2 Postbuild
+
 Script shell executado após aquisição da Source, dentro do sandbox de build.
 
 ---
@@ -473,14 +584,14 @@ Script shell executado após aquisição da Source, dentro do sandbox de build.
 - **Linguagem**: TypeScript
 - **Sistema de Arquivos**: OverlayFS via fuse-overlayfs
 - **Execução Windows**: UMU-Launcher (Proton/Wine)
-- **Pacotes**: JSR (@btripoloni/kintsugi - temporariamente ignorado)
+- **Pacotes**: JSR (@btripoloni/kintsugi - SDK público)
 
 ---
 
 ## 13. Observações Importantes
 
 1. O pacote `jsr:@btripoloni/kintsugi` existe mas será reescrito quando o repo se tornar turborepo
-2. O arquivo `modlist.json` por enquanto só contém o nome da modlist
+2. O arquivo `modlist.json` contém nome, versão e configuração de ambiente (native/UMU) da modlist. É copiado automaticamente para `~/.kintsugi/modlists/<nome>/` durante todo build.
 3. O comando `build` executa interpretador + compilador automaticamente
 4. O CLI atual tem 3 comandos principais: init, build, run (gc/vase mencionados na docs mas não implementados no código atual)
 5. O projeto é específico para Linux (usa fuse-overlayfs, namespaces)
@@ -489,40 +600,50 @@ Script shell executado após aquisição da Source, dentro do sandbox de build.
 
 ## 14. Arquitetura do Código Fonte
 
+### SDK (`packages/sdk/src/`)
+
 ```
-src/
-├── cli/                           # Interface de linha de comando
-│   ├── main.ts                    # Entry point do CLI
-│   ├── commands/
-│   │   ├── init.ts                # Comando: init
-│   │   ├── compile.ts             # Comando: compile
-│   │   └── run.ts                 # Comando: run
-│   └── tests/
-├── interpreter/                   # Interpretador de expressões TS
-│   └── src/
-│       ├── types/
-│       │   ├── derivation.ts      # Tipos Derivation, BuildOptions
-│       │   ├── source.ts          # Tipos de Source
-│       │   └── environment.ts     # Tipos de execução
-│       └── lib/
-│           ├── modpack.ts         # Resolução de dependências
-│           ├── hash.ts            # Geração de hash
-│           └── environment.ts     # Leitura de config de execução
-├── compiler/                      # Compilador (monta builds)
-│   └── src/
-│       ├── sources/               # Implementação das Sources
-│       │   ├── url.ts
-│       │   ├── local.ts
-│       │   ├── json.ts
-│       │   └── composition.ts
-│       ├── store/                 # Gerenciamento do Store
-│       │   └── store.ts
-│       └── types/
-│           ├── recipe.ts          # Tipo Recipe
-│           └── fetchers.ts        # Tipos de Fetcher
-└── core/                          # Core compartilhado
-    └── executor/
-        └── executor.ts            # Execução com OverlayFS
+packages/sdk/src/
+├── types/                        # Tipos TypeScript públicos
+│   ├── shard.ts               # Shard, Source, BuildOptions
+│   ├── fetchers.ts              # FetchUrl, FetchLocal, FetchVase, etc
+│   └── environment.ts           # EnvironmentConfig, RunManifest
+├── lib/
+│   ├── modpack.ts               # resolveTransitiveLayers, compose
+│   └── index.ts                 # Exports públicos
+```
+
+### CLI (`apps/cli/src/`)
+
+```
+apps/cli/src/
+├── main.ts                      # Entry point do CLI
+├── commands/                    # Comandos CLI
+│   ├── init.ts
+│   ├── build.ts
+│   ├── run.ts
+│   ├── compile.ts
+│   └── vase.ts
+├── interpreter/                 # Interpretador de main.ts
+│   └── interpreter.ts
+├── executor/                     # Execução com OverlayFS
+│   └── executor.ts
+├── sources/                      # Implementação das Sources
+│   ├── local.ts
+│   ├── url.ts
+│   ├── composition.ts
+│   ├── json.ts
+│   └── vase.ts
+├── store/                        # Gerenciamento do Store
+│   ├── store.ts                  # Recipes
+│   └── vase.ts                   # Vases
+├── lib/                          # Biblioteca interna
+│   ├── hash.ts                   # Geração de hash
+│   ├── modpack.ts                # Resolução de dependências
+│   ├── recipe.ts                 # Tipo Recipe
+│   └── manifest.ts               # Leitura de config de execução
+├── paths.ts                      # getKintsugiRoot
+└── tests/
 ```
 
 ---
@@ -546,6 +667,7 @@ src/
 ### 15.3 Verificação
 
 Sempre executar antes de submeter:
+
 ```bash
 deno check ./src/
 deno fmt ./src/

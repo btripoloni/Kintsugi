@@ -1,11 +1,17 @@
 {
+  "workspace": ["./packages/sdk", "./apps/cli"],
   "tasks": {
-    "cli": "deno run -A ./src/cli/main.ts",
-    "dev": "deno run -A --watch ./src/cli/main.ts",
-    "build": "deno compile -A -o ./dist/kintsugi ./src/cli/main.ts"
+    "test": "deno test",
+    "fmt": "deno fmt",
+    "lint": "deno lint",
+    "check": "deno check"
   },
   "imports": {
-    "@std/assert": "jsr:@std/assert@1"
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/path": "jsr:@std/path@1",
+    "@std/fs": "jsr:@std/fs@1",
+    "@std/crypto": "jsr:@std/crypto@1",
+    "@std/encoding": "jsr:@std/encoding@1"
   },
   "nodeModulesDir": "auto",
   "fmt": {
