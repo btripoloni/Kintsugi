@@ -43,8 +43,6 @@ export function parseVaseArgs(args: string[] = Deno.args.slice(2)): VaseArgs {
         };
     }
 
-
-
     return { subcommand: "help" };
 }
 
@@ -112,8 +110,6 @@ Examples:
             }
             break;
         }
-
-
 
         default:
             console.log(`Unknown subcommand: ${args.subcommand}`);

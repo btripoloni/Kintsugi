@@ -8,10 +8,56 @@ export interface ModlistOptions {
 }
 
 export async function modlist(options: ModlistOptions): Promise<Shard> {
-    return compose({
-        name: options.name,
-        layers: options.mods,
+    const { name, version, mods } = options;
+
+    // Hash all mods and their transitive dependencies
+    // First, collect all unique shards (mods + transitive deps)
+    const allShards = new Map<string, Shard>();
+
+    async function hashAndCollect(shard: Shard): Promise<Shard> {
+        const hashed = await hashShard({
+            name: shard.name,
+            version: shard.version,
+            src: shard.src,
+            dependencies: shard.dependencies,
+            _dependencyHashes: shard._dependencyHashes,
+            permissions: shard.permissions,
+            postbuild: shard.postbuild,
+        });
+
+        if (hashed.out) {
+            allShards.set(hashed.out, hashed);
+        }
+
+        if (shard.dependencies) {
+            const hashedDeps = await Promise.all(
+                shard.dependencies.map(hashAndCollect),
+            );
+            hashed.dependencies = hashedDeps;
+        }
+
+        return hashed;
+    }
+
+    const hashedMods = await Promise.all(mods.map(hashAndCollect));
+
+    const resolvedLayers = resolveTransitiveLayers(hashedMods);
+    const layerHashes = resolvedLayers.map((l) => l.out).filter((out): out is string => !!out);
+
+    const src: Source = {
+        type: "composition",
+        layers: layerHashes,
+    };
+
+    const drv = await hashShard({
+        name,
+        version,
+        src,
+        dependencies: resolvedLayers,
+        _dependencyHashes: layerHashes,
     });
+
+    return drv;
 }
 
 export function url(options: {

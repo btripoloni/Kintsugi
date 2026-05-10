@@ -45,7 +45,7 @@ export async function addVase(
 
     let counter = 1;
     let finalName = `${name}-${counter}`;
-    
+
     // Auto increment version suffix, always starts at -1
     while (await vaseExists(root, finalName)) {
         counter++;
@@ -56,7 +56,7 @@ export async function addVase(
 
     // Copy ALL files directly from source path into the vase directory
     await copy(path, targetPath, { overwrite: true });
-    
+
     return finalName;
 }
 

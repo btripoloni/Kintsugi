@@ -1,5 +1,5 @@
 import { join } from "jsr:@std/path";
-import type { Recipe } from "../lib/recipe.ts";
+import type { Recipe } from "@btripoloni/kintsugi";
 
 export function getRecipePath(recipesDir: string, out: string): string {
     return join(recipesDir, `${out}.json`);
