@@ -82,7 +82,6 @@ export default {
     const modlistJsonContent = JSON.stringify(
         {
             name,
-            version: "1.0.0",
             environment: {
                 type: "native",
             },

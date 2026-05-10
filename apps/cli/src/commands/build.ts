@@ -56,7 +56,7 @@ export function parseBuildArgs(args: string[] = Deno.args.slice(1)): BuildArgs {
             console.error("Or run from inside a modlist directory");
             Deno.exit(1);
         }
-        modlistPath = join(root, "modlists", name);
+        modlistPath = name.startsWith("/") ? name : join(root, "modlists", name);
     }
 
     return { modlistPath, root };

@@ -26,19 +26,17 @@ Deno.test("modlist function", async (t) => {
     await t.step("creates valid composition shard", async () => {
         const pack = await modlist({
             name: "test-pack",
-            version: "1.0.0",
             mods: [modB, modC],
         });
 
         assertEquals(pack.name, "test-pack");
-        assertEquals(pack.version, "1.0.0");
+        assertEquals(pack.version, "generated");
         assertEquals(pack.src.type, "composition");
     });
 
     await t.step("automatically includes transitive dependencies", async () => {
         const pack = await modlist({
             name: "test-pack",
-            version: "1.0.0",
             mods: [modB, modC],
         });
 
@@ -53,7 +51,6 @@ Deno.test("modlist function", async (t) => {
     await t.step("deduplicates same shard multiple times", async () => {
         const pack = await modlist({
             name: "test-pack",
-            version: "1.0.0",
             mods: [modA, modA, modA, modB],
         });
 

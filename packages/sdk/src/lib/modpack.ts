@@ -3,12 +3,11 @@ import { hashShard } from "./hash.ts";
 
 export interface ModlistOptions {
     name: string;
-    version: string;
     mods: Shard[];
 }
 
 export async function modlist(options: ModlistOptions): Promise<Shard> {
-    const { name, version, mods } = options;
+    const { name, mods } = options;
 
     // Hash all mods and their transitive dependencies
     // First, collect all unique shards (mods + transitive deps)
@@ -51,7 +50,7 @@ export async function modlist(options: ModlistOptions): Promise<Shard> {
 
     const drv = await hashShard({
         name,
-        version,
+        version: "generated",
         src,
         dependencies: resolvedLayers,
         _dependencyHashes: layerHashes,
