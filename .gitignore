@@ -3,6 +3,10 @@ bin/
 .gocache
 kintsugi-compiler
 kintsugi
+.kilocode
+.kilo
+.cursor
+.qoder
 
 # Deno
 .deno/
