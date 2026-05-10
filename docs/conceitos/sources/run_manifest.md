@@ -1,1 +1,0 @@
-cria o artefato de execussão que será usado posteriormente para montar o ambiente de execussão e rodar o jogo.
