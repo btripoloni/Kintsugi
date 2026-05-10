@@ -2,6 +2,7 @@ import type {
     Composition,
     CompositionLayer,
     FetchLocal,
+    FetchNexus,
     FetchUrl,
     FetchVase,
     WriteJson,
@@ -21,7 +22,7 @@ export interface Shard {
     out?: string;
 }
 
-export type Source = FetchUrl | FetchLocal | WriteJson | Composition | FetchVase | WriteRun;
+export type Source = FetchUrl | FetchLocal | FetchNexus | WriteJson | Composition | FetchVase | WriteRun;
 
 export interface BuildOptions {
     name: string;

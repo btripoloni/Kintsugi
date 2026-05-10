@@ -50,9 +50,19 @@ export interface WriteRun extends BaseFetcher {
     env?: Record<string, string>;
 }
 
+export interface FetchNexus extends BaseFetcher {
+    type: "nexus";
+    game: string;
+    modId: number;
+    fileId: number;
+    sha256: string;
+    unpack?: boolean;
+}
+
 export type Fetcher =
     | FetchUrl
     | FetchLocal
+    | FetchNexus
     | WriteJson
     | Composition
     | FetchVase
