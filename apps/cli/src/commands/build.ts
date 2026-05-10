@@ -7,6 +7,7 @@ import {
     executeComposition,
     executeJson,
     executeLocal,
+    executeNexus,
     executeRun,
     executeUrl,
     executeVase,
@@ -15,6 +16,7 @@ import type {
     Composition,
     Fetcher,
     FetchLocal,
+    FetchNexus,
     FetchUrl,
     FetchVase,
     WriteJson,
@@ -74,6 +76,9 @@ async function executeSource(
             break;
         case "url":
             await executeUrl(fetcher as FetchUrl, ctx);
+            break;
+        case "nexus":
+            await executeNexus(fetcher as FetchNexus, { ...ctx, kintsugiRoot: root });
             break;
         case "composition":
             await executeComposition(fetcher as Composition, ctx);
