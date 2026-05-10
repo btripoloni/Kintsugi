@@ -3,6 +3,7 @@ import { type CompileArgs, compileCommand, parseCompileArgs } from "./commands/c
 import { type BuildArgs, buildCommand, parseBuildArgs } from "./commands/build.ts";
 import { type InitArgs, initCommand, parseInitArgs } from "./commands/init.ts";
 import { parseVaseArgs, type VaseArgs, vaseCommand } from "./commands/vase.ts";
+import { parseGcArgs, type GcArgs, gcCommand } from "./commands/gc.ts";
 
 const args = Deno.args;
 const command = args[0];
@@ -35,6 +36,10 @@ async function runCommandDirect(command: string, commandArgs: string[]): Promise
             const vaseArgs: VaseArgs = parseVaseArgs(commandArgs);
             await vaseCommand(vaseArgs);
             return 0;
+        } else if (command === "gc") {
+            const gcArgs: GcArgs = parseGcArgs(commandArgs);
+            await gcCommand(gcArgs);
+            return 0;
         } else {
             console.error(`Unknown command: ${command}`);
             return 1;
@@ -55,6 +60,7 @@ Usage:
 Commands:
   build   Build a modlist (interpret + compile)
   compile Compile a recipe into a composition
+  gc      Garbage Collector - remove unused shards
   init    Initialize a new modlist
   run     Run a modlist
   vase    Manage vases (game installations)
@@ -65,6 +71,7 @@ Options:
 Examples:
   kintsugi build skyrim
   kintsugi run skyrim default
+  kintsugi gc --dry-run
   kintsugi vase add skyrim /path/to/game
 `);
 }
@@ -108,6 +115,25 @@ Options:
   --modlist <dir> Modlist root directory (default: .)
   --output <dir>  Output directory (default: output)
   --help, -h      Show this help message
+`);
+        Deno.exit(0);
+    }
+
+    if (command === "gc" && showHelp) {
+        console.log(`
+Kintsugi Garbage Collector
+
+Usage:
+  kintsugi gc [--dry-run] [--root <kintsugi-root>]
+
+Options:
+  --dry-run        List unused items without deleting them
+  --root           Kintsugi root directory (default: ~/.kintsugi)
+  --help, -h       Show this help message
+
+Examples:
+  kintsugi gc --dry-run
+  kintsugi gc --root /tmp/kintsugi
 `);
         Deno.exit(0);
     }
