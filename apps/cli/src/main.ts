@@ -3,6 +3,7 @@ import { type CompileArgs, compileCommand, parseCompileArgs } from "./commands/c
 import { type BuildArgs, buildCommand, parseBuildArgs } from "./commands/build.ts";
 import { type InitArgs, initCommand, parseInitArgs } from "./commands/init.ts";
 import { parseVaseArgs, type VaseArgs, vaseCommand } from "./commands/vase.ts";
+import { modlistCommand, parseModlistArgs } from "./commands/modlist.ts";
 
 const args = Deno.args;
 const command = args[0];
@@ -35,6 +36,9 @@ async function runCommandDirect(command: string, commandArgs: string[]): Promise
             const vaseArgs: VaseArgs = parseVaseArgs(commandArgs);
             await vaseCommand(vaseArgs);
             return 0;
+        } else if (command === "modlist") {
+            await modlistCommand(parseModlistArgs(commandArgs));
+            return 0;
         } else {
             console.error(`Unknown command: ${command}`);
             return 1;
@@ -58,6 +62,7 @@ Commands:
   init    Initialize a new modlist
   run     Run a modlist
   vase    Manage vases (game installations)
+  modlist Manage built modlists
 
 Options:
   --help, -h Show this help message
@@ -66,6 +71,7 @@ Examples:
   kintsugi build skyrim
   kintsugi run skyrim default
   kintsugi vase add skyrim /path/to/game
+  kintsugi modlist list
 `);
 }
 
@@ -170,6 +176,30 @@ Examples:
   kintsugi vase list
   kintsugi vase remove skyrim-1
   kintsugi vase info skyrim-1
+`);
+        Deno.exit(0);
+    }
+
+    if (command === "modlist" && showHelp) {
+        console.log(`
+Kintsugi Modlist
+
+Usage:
+  kintsugi modlist <command> [options]
+
+Commands:
+  remove <name>        Remove a built modlist
+  list                 List all built modlists
+  info <name>          Show modlist metadata
+
+Options:
+  --root <dir>         Kintsugi root directory (default: ~/.kintsugi)
+  --help, -h          Show this help message
+
+Examples:
+  kintsugi modlist list
+  kintsugi modlist info skyrim
+  kintsugi modlist remove skyrim-old
 `);
         Deno.exit(0);
     }

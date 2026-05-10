@@ -60,6 +60,8 @@ export function parseBuildArgs(args: string[] = Deno.args.slice(1)): BuildArgs {
     return { modlistPath, root };
 }
 
+import { addBuildToHistory } from "../store/modlist.ts";
+
 async function executeSource(
     fetcher: Fetcher,
     modlistRoot: string,
@@ -314,6 +316,8 @@ Note: Run from inside a modlist directory, or provide <modlist-name>
     }
 
     await Deno.symlink(compositionPath, activePath);
+
+    await addBuildToHistory(root, modlistName, rootOut);
 
     console.log(`Build complete. Active composition: ${rootOut}`);
 }
